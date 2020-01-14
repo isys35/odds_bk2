@@ -36,12 +36,17 @@ class Parser:
         Запуск браузера
         self.browser
         """
+        print('[INFO] Запуск браузера')
         options = Options()
         options.headless = False  # False - не отображает браузер; True - отображает
         self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
                              options={'existing_proxy_port_to_use': 8090})
         self.server.start()
-        proxy = self.server.create_proxy()
+        try:
+            proxy = self.server.create_proxy()
+        except Exception:
+            print('[WARNING] Сервер уже запущен')
+            proxy = self.server.create_proxy()
         profile = webdriver.FirefoxProfile()
         profile.set_proxy(proxy.selenium_proxy())
         self.browser = webdriver.Firefox(firefox_profile=profile, options=options)
@@ -116,7 +121,7 @@ class Parser:
                 soup_pagination = BS(self.browser.page_source, 'html.parser')
                 pagination = soup_pagination.select('#pagination')
                 if not pagination:
-                    self.get_liga_data_in_year(year_page, string_sport, country, string_champ, False)
+                    champ_data = self.get_champ_data_in_year(year_page)
             #         for page in year_page_reversed:
             #             year_page = 'https://www.oddsportal.com' + page['href']
             #             if self.check_champ_in_db(year_page):
@@ -194,7 +199,7 @@ class Parser:
         con.close()
         return False
 
-    def get_liga_data_in_year(self, url):
+    def get_champ_data_in_year(self, url):
         if not self.browser:
             self.browser_start()
         if url != self.browser.current_url:
@@ -313,7 +318,6 @@ class Parser:
                             self.get_liga_data_in_year(first_year_page, sport, country, liga)
                     except TimeoutException:
                         print('[EROR] TimeoutException')
-
 
     def restart_browser(self):
         print('[INFO] Перезапуск драйвера')
@@ -518,4 +522,4 @@ class Parser:
 
 
 parser = Parser()
-parser.get_liga_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/')
+parser.get_champ_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/')

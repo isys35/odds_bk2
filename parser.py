@@ -241,6 +241,7 @@ class Parser:
                     self.out_match_data['date'] = date
                     if 'Canceled' != result and 'awarded' not in result:
                         self.add_game_in_db()
+                        self.add_bet_in_db()
 
     def get_odds_response(self, url):
         """
@@ -388,80 +389,6 @@ class Parser:
         print(str(out_dict_odds))
         return out_dict_odds
 
-            # left_cut1 = odds_response.split('"opening_odds":', 1)
-            # right_cut1 = left_cut1[1].split(',"opening_change_time":', 1)
-            # left_cut2 = odds_response.split('"odds":', 1)
-            # right_cut2 = left_cut2[1].split(',"movement":', 1)
-            # dict_openodds = eval(right_cut1[0])
-            # # print(dict_openodds)
-            # dict_odds = eval(right_cut2[0])
-            # # print(dict_odds)
-            # for bk_id, odds in dict_openodds.items():
-            #     if type(odds) is list:
-            #         for i in range(0, len(odds)):
-            #             if not odds[i]:
-            #                 dict_openodds[bk_id][i] = dict_odds[bk_id][i]
-            #     else:
-            #         for pos, item in odds.items():
-            #             if not item:
-            #                 dict_openodds[bk_id][pos] = dict_odds[bk_id][pos]
-            # out_dict_odds = {}
-            # for bk_id, odd in dict_openodds.items():
-            #     if type(odd) is list:
-            #         odds = odd
-            #         if bk_id in self.bookmakersData:
-            #             out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
-            #     else:
-            #         odds = [None, None, None]
-            #         if bk_id in self.bookmakersData:
-            #             for pos, item in odd.items():
-            #                 if pos == '0':
-            #                     odds[0] = item
-            #                 elif pos == '1':
-            #                     odds[1] = item
-            #                 elif pos == '2':
-            #                     odds[2] = item
-            #             out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
-            # print('[INFO]' + str(out_dict_odds))
-            # return out_dict_odds
-
-
-
-        # for tr in trs:
-        #     try:
-        #         if tr['class'] == ['center', 'nob-border']:
-        #             date = tr.select('span')[0].text
-        #         elif 'deactivate' in tr['class']:
-        #             if len(tr.select('span.live-odds-ico-prev')) == 0:
-        #                 timematch = tr.select('td.table-time')[0].text
-        #                 match_url = 'https://www.oddsportal.com' + tr.select('a')[0]['href']
-        #                 game_name = tr.select('a')[0].text
-        #                 command1 = game_name.split(' - ')[0]
-        #                 command2 = game_name.split(' - ')[1]
-        #                 # check_list = [command1, command2, match_url, date, timematch, sport, country, liga]
-        #                 if self.check_game_in_db(match_url):
-        #                     continue
-        #                 else:
-        #                     try:
-        #                         match_data = self.get_match_data(match_url)
-        #                     except Exception:
-        #                         print(traceback.format_exc())
-        #                     out_match = [command1,
-        #                                  command2,
-        #                                  match_url,
-        #                                  date,
-        #                                  timematch,
-        #                                  match_data[0],
-        #                                  sport,
-        #                                  country,
-        #                                  liga]
-        #                     if 'Canceled' != match_data[0] and 'awarded' not in match_data[0]:
-        #                         self.add_game_in_db(out_match)
-        #                         self.add_bet_in_db(match_data[1], out_match)
-        #     except KeyError:
-        #         print('[WARNING] Not odds')
-
-
     def continue_parsing(self):
         if not self.browser:
             self.browser_start()
@@ -584,22 +511,26 @@ class Parser:
         cur.close()
         con.close()
 
-    def add_bet_in_db(self, bets_dict: dict, data_parsing: list):
+    def add_bet_in_db(self):
+        """
+        Добавление коэф-тов в бд
+        :return:
+        """
         print('[INFO] add bets in db.....')
         start = time.time()
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        query = 'SELECT id,command1,command2,url,date,timematch,result,sport,country,liga FROM game'
+        query = 'SELECT id,url FROM game'
         cur.execute(query)
         data_game_dict = {}
         for game in cur.fetchall():
-            data_game_dict[game[0]] = [el for el in game[1:]]
+            data_game_dict[game[0]] = game[1]
         key_game = None
         for key, item in data_game_dict.items():
-            if item == data_parsing:
+            if item == self.out_match_data['url']:
                 key_game = key
                 break
-        for key, item in bets_dict.items():
+        for key, item in self.out_match_data['odds'].items():
             self.add_bookmaker_in_db(key, cur, con)
             key_bookmaker = None
             query = 'SELECT * FROM bookmaker'
@@ -616,7 +547,9 @@ class Parser:
                 data_out = [key_bookmaker, item[0], 0, item[1], key_game]
             cur.execute('INSERT INTO bet (bookmaker_id,p1,x,p2,game_id) VALUES(?,?,?,?,?)', data_out)
             self.counter_bet += 1
-        self.label_info.setText('Добавлено коэф.: ' + str(self.counter_bet))
+        print('[INFO] Кол-во добавленных ставок ' + str(self.counter_bet))
+        if self.label_info:
+            self.label_info.setText('Добавлено коэф.: ' + str(self.counter_bet))
         # print('[INFO] Ставка добавлена в базу')
         con.commit()
         end = time.time()
@@ -626,6 +559,16 @@ class Parser:
         con.close()
 
     def add_bookmaker_in_db(self, name: str, cur, con):
+        """
+        Добавление букмекера в базу данных
+        :param name:
+        название бк
+        :param cur:
+        cursor бд
+        :param con:
+        connect бд
+        :return:
+        """
         query = 'SELECT * FROM bookmaker'
         cur.execute(query)
         data_name = [name[1] for name in cur.fetchall()]

@@ -25,6 +25,8 @@ class Parser:
         self.bookmakersData = self.get_bookmakersdata()
         self.server = None
         self.browser = None
+        self.proxy = None
+        self.out_match_data = {}
 
     @staticmethod
     def get_bookmakersdata():
@@ -43,12 +45,12 @@ class Parser:
                              options={'existing_proxy_port_to_use': 8090})
         self.server.start()
         try:
-            proxy = self.server.create_proxy()
+            self.proxy = self.server.create_proxy()
         except Exception:
             print('[WARNING] Сервер уже запущен')
-            proxy = self.server.create_proxy()
+            self.proxy = self.server.create_proxy()
         profile = webdriver.FirefoxProfile()
-        profile.set_proxy(proxy.selenium_proxy())
+        profile.set_proxy(self.proxy.selenium_proxy())
         self.browser = webdriver.Firefox(firefox_profile=profile, options=options)
 
     def start(self, sport):
@@ -88,9 +90,6 @@ class Parser:
                 html_championship = BS(champ_request_allyears.content, 'html.parser')
                 years_menu = html_championship.select('.main-menu2.main-menu-gray')
         year_page_reversed = []
-        string_sport = None
-        country = None
-        string_champ = None
         if years_menu:
             years_pages = years_menu[0].select('a')
             first_page = years_pages[0]['href']
@@ -98,8 +97,11 @@ class Parser:
             content_first_page = self.browser.page_source
             soup_champ = BS(content_first_page, 'html.parser')
             string_sport = soup_champ.select('#breadcrumb')[0].select('a')[1].text
+            self.out_match_data['sport'] = string_sport
             country = soup_champ.select('#breadcrumb')[0].select('a')[2].text
+            self.out_match_data['country'] = country
             string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
+            self.out_match_data['champ'] = string_champ
             print('[INFO] Страна ' + country)
             print('[INFO] Чемпионат ' + string_champ)
             if self.check_champ_in_db(self.main_page + first_page):
@@ -189,6 +191,7 @@ class Parser:
     def get_champ_data_in_year(self, url, *args):
         """
         Получение данных из страницы со списком матчей
+        и добавление игр в бд
         :param url:
             адрес страницы
         :param args:
@@ -220,7 +223,6 @@ class Parser:
                 soup_champ = BS(content_browser, 'html.parser')
                 active_page = int(soup_champ.select('#pagination')[0].select('span.active-page')[0].text)
             print('[INFO] Страница верная')
-        matches = []
         for tr in trs:
             if 'deactivate' in tr['class']:
                 if len(tr.select('span.live-odds-ico-prev')) == 0:
@@ -229,7 +231,201 @@ class Parser:
                     game_name = tr.select('a')[0].text
                     command1 = game_name.split(' - ')[0]
                     command2 = game_name.split(' - ')[1]
-                    result, odds, time = self.get_match_data(match_url)
+                    result, odds, date = self.get_match_data(match_url)
+                    self.out_match_data['time'] = timematch
+                    self.out_match_data['url'] = match_url
+                    self.out_match_data['command1'] = command1
+                    self.out_match_data['command2'] = command2
+                    self.out_match_data['result'] = result
+                    self.out_match_data['odds'] = odds
+                    self.out_match_data['date'] = date
+                    if 'Canceled' != result and 'awarded' not in result:
+                        self.add_game_in_db()
+
+    def get_odds_response(self, url):
+        """
+        получение url запроса к API
+        :param url:
+        адрес страницы с игрой
+        :return:
+        """
+        request_odds_url = None
+        if not self.browser:
+            self.browser_start()
+        while not request_odds_url:
+            print('[INFO] Получение API запроса для %s' % url)
+            self.proxy.new_har("oddsportal")
+            self.browser.get(url)
+            out = self.proxy.har
+            for el in out['log']['entries']:
+                if 'https://fb.oddsportal.com/feed/match/' in el['request']['url']:
+                    print(el['request']['url'])
+                    request_odds_url = el['request']['url'][:-13]
+                    return request_odds_url
+
+    def get_result(self, url):
+        """
+        Получение результата матча
+        :param url:
+        адрес страницы с игрой
+        :return:
+        """
+        if not self.browser:
+            self.browser_start()
+        if url != self.browser.current_url:
+            self.browser.get(url)
+        content_match = self.browser.page_source
+        soup_liga = BS(content_match, 'html.parser')
+        col_content = soup_liga.select('#col-content')
+        try:
+            result = col_content[0].select('p.result')[0].text
+        except IndexError:
+            result = 'Canceled'
+        print('[INFO] ' + result)
+        return result
+
+    def get_date(self, url):
+        """
+        Получение даты матча
+        :param url:
+        адрес страницы с игрой
+        :return:
+        """
+        if not self.browser:
+            self.browser_start()
+        if url != self.browser.current_url:
+            self.browser.get(url)
+        content_match = self.browser.page_source
+        soup_liga = BS(content_match, 'html.parser')
+        col_content = soup_liga.select('#col-content')
+        try:
+            date = col_content[0].select('p.date')[0].text.split(', ')[1]
+        except IndexError:
+            date = 'None'
+        print('[INFO] ' + date)
+        return date
+
+    def get_match_data(self, url: str):
+        """
+        Получения данных с игры
+        :param url:
+        Ссылка на игру
+        :return:
+        """
+        print(url)
+        start = time.time()
+        request_odds_url = self.get_odds_response(url)
+        result = self.get_result(url)
+        date = self.get_date(url)
+        headers = {
+             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0',
+             'referer': url
+         }
+        # время запроса для подключения к API
+        timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
+        # итоговый запрос
+        req_for_time = request_odds_url + timer_reg
+        odds_response = '"E":"notAllowed"'
+        while '"E":"notAllowed"' in odds_response:
+             print(req_for_time)
+             r = requests.get(req_for_time, headers=headers)
+             odds_response = r.text
+             if '"E":"notAllowed"' in odds_response:
+                 print('notAllowed')
+                 request_odds_url = self.get_odds_response(url)
+                 timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
+                 req_for_time = request_odds_url + timer_reg
+        if '"odds":' in odds_response:
+            out_odds = self.clear_response_odds(odds_response)
+            end = time.time()
+            time_compl = end - start
+            print('[INFO]Время получения данных из игры %s' % str(time_compl))
+            return [result, out_odds, date]
+        return [result, {}, date]
+
+    def clear_response_odds(self, odds_response):
+        """
+        Очистка ответа от API от ненужных данных
+        :param odds_response:
+        :return:
+        """
+        null = None
+        left_cut1 = odds_response.split('"opening_odds":', 1)
+        right_cut1 = left_cut1[1].split(',"opening_change_time":', 1)
+        left_cut2 = odds_response.split('"odds":', 1)
+        right_cut2 = left_cut2[1].split(',"movement":', 1)
+        dict_openodds = eval(right_cut1[0])
+        dict_odds = eval(right_cut2[0])
+        #print(dict_openodds)
+        for bk_id, odds in dict_openodds.items():
+            if type(odds) is list:
+                for i in range(0, len(odds)):
+                    if not odds[i]:
+                        dict_openodds[bk_id][i] = dict_odds[bk_id][i]
+            else:
+                for pos, item in odds.items():
+                    if not item:
+                        dict_openodds[bk_id][pos] = dict_odds[bk_id][pos]
+        out_dict_odds = {}
+        for bk_id, odd in dict_openodds.items():
+            if type(odd) is list:
+                odds = odd
+                if bk_id in self.bookmakersData:
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+            else:
+                odds = [None, None, None]
+                if bk_id in self.bookmakersData:
+                    for pos, item in odd.items():
+                        if pos == '0':
+                            odds[0] = item
+                        elif pos == '1':
+                            odds[1] = item
+                        elif pos == '2':
+                            odds[2] = item
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+        print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
+        print('[INFO] Коэ-ты:')
+        print(str(out_dict_odds))
+        return out_dict_odds
+
+            # left_cut1 = odds_response.split('"opening_odds":', 1)
+            # right_cut1 = left_cut1[1].split(',"opening_change_time":', 1)
+            # left_cut2 = odds_response.split('"odds":', 1)
+            # right_cut2 = left_cut2[1].split(',"movement":', 1)
+            # dict_openodds = eval(right_cut1[0])
+            # # print(dict_openodds)
+            # dict_odds = eval(right_cut2[0])
+            # # print(dict_odds)
+            # for bk_id, odds in dict_openodds.items():
+            #     if type(odds) is list:
+            #         for i in range(0, len(odds)):
+            #             if not odds[i]:
+            #                 dict_openodds[bk_id][i] = dict_odds[bk_id][i]
+            #     else:
+            #         for pos, item in odds.items():
+            #             if not item:
+            #                 dict_openodds[bk_id][pos] = dict_odds[bk_id][pos]
+            # out_dict_odds = {}
+            # for bk_id, odd in dict_openodds.items():
+            #     if type(odd) is list:
+            #         odds = odd
+            #         if bk_id in self.bookmakersData:
+            #             out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+            #     else:
+            #         odds = [None, None, None]
+            #         if bk_id in self.bookmakersData:
+            #             for pos, item in odd.items():
+            #                 if pos == '0':
+            #                     odds[0] = item
+            #                 elif pos == '1':
+            #                     odds[1] = item
+            #                 elif pos == '2':
+            #                     odds[2] = item
+            #             out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+            # print('[INFO]' + str(out_dict_odds))
+            # return out_dict_odds
+
+
 
         # for tr in trs:
         #     try:
@@ -264,6 +460,7 @@ class Parser:
         #                         self.add_bet_in_db(match_data[1], out_match)
         #     except KeyError:
         #         print('[WARNING] Not odds')
+
 
     def continue_parsing(self):
         if not self.browser:
@@ -342,53 +539,38 @@ class Parser:
                     except TimeoutException:
                         print('[EROR] TimeoutException')
 
-    def restart_browser(self):
-        print('[INFO] Перезапуск драйвера')
-        self.browser.close()
-        self.proxy.close()
-        self.options = Options()
-        self.options.headless = False
-        self.proxy = self.server.create_proxy()
-        self.profile = webdriver.FirefoxProfile()
-        self.profile.set_proxy(self.proxy.selenium_proxy())
-        self.browser = webdriver.Firefox(firefox_profile=self.profile, options=self.options)
-
-    def get_odds_response(self, url):
-        request_odds_url = None
-        if self.counter_game % 100 == 0:
-            self.restart_browser()
-        while not request_odds_url:
-            print('[INFO] Получение API запроса для %s' % url)
-            print('поиск ошибки0')
-            try:
-                self.proxy.new_har("oddsportal")
-                print('поиск ошибки1')
-                self.browser.get(url)
-            except Exception:
-                print('ОШИИИИИИИИИИИИИИИИИИИИИИИИББББББКААААААААААА 222222222222222222222222222222')
-                print(traceback.format_exc())
-            print('поиск ошибки2')
-            out = self.proxy.har
-            print('поиск ошибки3')
-            for el in out['log']['entries']:
-                if 'https://fb.oddsportal.com/feed/match/' in el['request']['url']:
-                    print(el['request']['url'])
-                    request_odds_url = el['request']['url'][:-13]
-                    return request_odds_url
-
-
-
-    def add_game_in_db(self, data_parsing: list):
+    def add_game_in_db(self,*args):
+        """
+        Добавление игры в базу
+        :param args:
+        :arg[0] - Словарь для ручного добавления в базу
+        :return:
+        """
         con = sqlite3.connect(self.db)
         cur = con.cursor()
+        if args:
+            input_data = args[0]
+        else:
+            input_data = [self.out_match_data['command1'],
+                          self.out_match_data['command2'],
+                          self.out_match_data['url'],
+                          self.out_match_data['date'],
+                          self.out_match_data['time'],
+                          self.out_match_data['result'],
+                          self.out_match_data['sport'],
+                          self.out_match_data['country'],
+                          self.out_match_data['champ'], ]
         cur.execute('INSERT INTO game (command1,command2,url,date,timematch,'
                     'result,sport,country,liga) '
-                    'VALUES(?,?,?,?,?,?,?,?,?)', data_parsing)
+                    'VALUES(?,?,?,?,?,?,?,?,?)', input_data)
         con.commit()
-        print('[INFO] игра %s добавлена в базу' % str(data_parsing[0:2]))
+        print('[INFO] игра %s добавлена в базу' % str(input_data[0:2]))
         self.counter_game += 1
-        self.label_info2.setText('Добавлено игр: ' + str(self.counter_game))
-        self.update_label3()
+        print('[INFO] Добавлено игр ' + str(self.counter_game))
+        if self.label_info2:
+            self.label_info2.setText('Добавлено игр: ' + str(self.counter_game))
+        if self.label_info3:
+            self.update_label3()
         cur.close()
         con.close()
 
@@ -459,3 +641,5 @@ class Parser:
 parser = Parser()
 #parser.get_champ_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/#/page/4/', 4)
 parser.start('soccer')
+#parser.get_match_data('https://www.oddsportal.com/soccer/moldova/moldovan-cup-2012-2013/dacia-chisinau-veris-chisinau-zTuQkK0d/')
+#parser.get_result('https://www.oddsportal.com/soccer/asia/gulf-cup-of-nations/kuwait-oman-thHnGRUn/')

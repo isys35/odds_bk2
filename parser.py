@@ -84,7 +84,7 @@ class Parser:
         years_menu = None
         if sport == 'soccer':
             if href_champ.split('/')[1] == sport:
-                champ_request_allyears = requests.get('https://www.oddsportal.com' + href_champ, headers=self.headers)
+                champ_request_allyears = requests.get(self.main_page + href_champ, headers=self.headers)
                 html_championship = BS(champ_request_allyears.content, 'html.parser')
                 years_menu = html_championship.select('.main-menu2.main-menu-gray')
         year_page_reversed = []
@@ -94,7 +94,7 @@ class Parser:
         if years_menu:
             years_pages = years_menu[0].select('a')
             first_page = years_pages[0]['href']
-            self.browser.get('https://www.oddsportal.com' + first_page)
+            self.browser.get(self.main_page + first_page)
             content_first_page = self.browser.page_source
             soup_champ = BS(content_first_page, 'html.parser')
             string_sport = soup_champ.select('#breadcrumb')[0].select('a')[1].text
@@ -102,7 +102,7 @@ class Parser:
             string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
             print('[INFO] Страна ' + country)
             print('[INFO] Чемпионат ' + string_champ)
-            if self.check_champ_in_db('https://www.oddsportal.com' + first_page):
+            if self.check_champ_in_db(self.main_page + first_page):
                 print('[INFO] Чемпионат полностью в базе')
                 return
             print('[INFO] Чемпионат не полностью в базе')
@@ -110,7 +110,7 @@ class Parser:
             year_page_reversed.reverse()
         if year_page_reversed:
             for page in year_page_reversed:
-                year_page = 'https://www.oddsportal.com' + page['href']
+                year_page = self.main_page + page['href']
                 print('[INFO] Страница с годом ' + page.text + ' ' + year_page)
                 if self.check_champ_in_db(year_page):
                     print('[INFO] Год полностью есть в базе')
@@ -121,33 +121,20 @@ class Parser:
                 soup_pagination = BS(self.browser.page_source, 'html.parser')
                 pagination = soup_pagination.select('#pagination')
                 if not pagination:
-                    champ_data = self.get_champ_data_in_year(year_page)
-            #         for page in year_page_reversed:
-            #             year_page = 'https://www.oddsportal.com' + page['href']
-            #             if self.check_champ_in_db(year_page):
-            #                 continue
-            #             print('[INFO] Страница с годом ' + year_page)
-            #             self.browser.get(year_page)
-            #             page_pagination = BS(self.browser.page_source, 'html.parser')
-            #             pagination = page_pagination.select('#pagination')
-            #             try:
-            #                 if len(pagination) == 0:
-            #                     self.get_liga_data_in_year(year_page, sport, country, liga)
-            #                 else:
-            #                     max_page = pagination[0].select('a')[-1]['x-page']
-            #                     p = int(max_page)
-            #                     while p != 1:
-            #                         print('[INFO]Страница ' + str(p))
-            #                         year_page_add = 'https://www.oddsportal.com' + page[
-            #                             'href'] + '#/page/%s/' % str(p)
-            #                         if self.check_champ_in_db(year_page_add):
-            #                             p -= 1
-            #                             continue
-            #                         self.get_liga_data_in_year(year_page_add, sport, country, liga)
-            #                         p -= 1
-            #                     self.get_liga_data_in_year(year_page, sport, country, liga)
-            #             except TimeoutException:
-            #                 print('[EROR] TimeoutException')
+                    self.get_champ_data_in_year(year_page)
+                else:
+                    max_page = pagination[0].select('a')[-1]['x-page']
+                    p = int(max_page)
+                    while p != 1:
+                        print('[INFO]Страница ' + str(p))
+                        year_page_add = self.main_page + page['href'] +\
+                                        '#/page/%s/' % str(p)
+                        if self.check_champ_in_db(year_page_add):
+                            p -= 1
+                            continue
+                        self.get_champ_data_in_year(year_page_add, p)
+                        p -= 1
+                    self.get_champ_data_in_year(year_page)
 
     def check_champ_in_db(self, champ_url):
         """
@@ -168,7 +155,7 @@ class Parser:
         for tr in trs:
             if 'deactivate' in tr['class']:
                 if len(tr.select('span.live-odds-ico-prev')) == 0:
-                    match_url = 'https://www.oddsportal.com' + tr.select('a')[0]['href']
+                    match_url = self.main_page + tr.select('a')[0]['href']
                     if self.check_game_in_db(match_url):
                         return True
                     else:
@@ -199,15 +186,51 @@ class Parser:
         con.close()
         return False
 
-    def get_champ_data_in_year(self, url):
+    def get_champ_data_in_year(self, url, *args):
+        """
+        Получение данных из страницы со списком матчей
+        :param url:
+            адрес страницы
+        :param args:
+            если страница имеет много подстраниц,
+             args[0] - номер этой страницы
+        :return:
+        """
+        print(url)
         if not self.browser:
             self.browser_start()
         if url != self.browser.current_url:
+            self.browser.get(self.main_page)
             self.browser.get(url)
         content_browser = self.browser.page_source
-        soup_liga = BS(content_browser, 'html.parser')
-        trs = soup_liga.select('#tournamentTable')[0].select('tr')
+        soup_champ = BS(content_browser, 'html.parser')
+        trs = soup_champ.select('#tournamentTable')[0].select('tr')
         trs.reverse()
+        try:
+            for tr in trs:
+                check = tr['class']
+        except KeyError:
+            print('[WARNING] Not odds')
+            return []
+        if args:
+            active_page = 0
+            while active_page != args[0]:
+                print('[INFO] проверка правильности страницы')
+                content_browser = self.browser.page_source
+                soup_champ = BS(content_browser, 'html.parser')
+                active_page = int(soup_champ.select('#pagination')[0].select('span.active-page')[0].text)
+            print('[INFO] Страница верная')
+        matches = []
+        for tr in trs:
+            if 'deactivate' in tr['class']:
+                if len(tr.select('span.live-odds-ico-prev')) == 0:
+                    timematch = tr.select('td.table-time')[0].text
+                    match_url = self.main_page + tr.select('a')[0]['href']
+                    game_name = tr.select('a')[0].text
+                    command1 = game_name.split(' - ')[0]
+                    command2 = game_name.split(' - ')[1]
+                    result, odds, time = self.get_match_data(match_url)
+
         # for tr in trs:
         #     try:
         #         if tr['class'] == ['center', 'nob-border']:
@@ -353,95 +376,7 @@ class Parser:
                     request_odds_url = el['request']['url'][:-13]
                     return request_odds_url
 
-    def get_result(self):
-        '''
-        всегда выполнять после метода get_odds_response
-        :return:
-        '''
-        content_match = self.browser.page_source
-        soup_liga = BS(content_match, 'html.parser')
-        col_content = soup_liga.select('#col-content')
-        try:
-            result = col_content[0].select('p.result')[0].text
-        except IndexError:
-            result = 'Canceled'
-        print('[INFO] ' + result)
-        return result
 
-    def get_match_data(self, url: str):
-        # return [result:text, bets_dict:{}]
-        print(url)
-        start = time.time()
-        try:
-            request_odds_url = self.get_odds_response(url)
-        except Exception:
-            print('ОШИИИИИИИИИИИИИИИИИИИИИИИИББББББКААААААААААА')
-            print(traceback.format_exc())
-        result = self.get_result()
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0',
-            'referer': url
-        }
-        timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
-        req_for_time = request_odds_url + timer_reg
-        odds_response = '"E":"notAllowed"'
-        # исправить
-        while '"E":"notAllowed"' in odds_response:
-            print(req_for_time)
-            r = requests.get(req_for_time, headers=headers)
-            odds_response = r.text
-            if '"E":"notAllowed"' in odds_response:
-                print('notAllowed')
-                request_odds_url = self.get_odds_response(url)
-                timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
-                req_for_time = request_odds_url + timer_reg
-        if '"odds":' in odds_response:
-            out_odds = self.clear_response_odds(odds_response)
-            end = time.time()
-            time_compl = end - start
-            print('[INFO]Время получения данных из игры %s' % str(time_compl))
-            return [result, out_odds]
-        return [result, {}]
-
-    def clear_response_odds(self, odds_response):
-        # print(odds_response)
-        null = None
-        left_cut1 = odds_response.split('"opening_odds":', 1)
-        right_cut1 = left_cut1[1].split(',"opening_change_time":', 1)
-        left_cut2 = odds_response.split('"odds":', 1)
-        right_cut2 = left_cut2[1].split(',"movement":', 1)
-        dict_openodds = eval(right_cut1[0])
-        # print(dict_openodds)
-        dict_odds = eval(right_cut2[0])
-        # print(dict_odds)
-        for bk_id, odds in dict_openodds.items():
-            if type(odds) is list:
-                for i in range(0, len(odds)):
-                    if not odds[i]:
-                        dict_openodds[bk_id][i] = dict_odds[bk_id][i]
-            else:
-                for pos, item in odds.items():
-                    if not item:
-                        dict_openodds[bk_id][pos] = dict_odds[bk_id][pos]
-        out_dict_odds = {}
-        for bk_id, odd in dict_openodds.items():
-            if type(odd) is list:
-                odds = odd
-                if bk_id in self.bookmakersData:
-                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
-            else:
-                odds = [None, None, None]
-                if bk_id in self.bookmakersData:
-                    for pos, item in odd.items():
-                        if pos == '0':
-                            odds[0] = item
-                        elif pos == '1':
-                            odds[1] = item
-                        elif pos == '2':
-                            odds[2] = item
-                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
-        print('[INFO]' + str(out_dict_odds))
-        return out_dict_odds
 
     def add_game_in_db(self, data_parsing: list):
         con = sqlite3.connect(self.db)
@@ -522,4 +457,5 @@ class Parser:
 
 
 parser = Parser()
-parser.get_champ_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/')
+#parser.get_champ_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/#/page/4/', 4)
+parser.start('soccer')

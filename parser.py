@@ -3,9 +3,7 @@ from bs4 import BeautifulSoup as BS
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from browsermobproxy import Server
-from selenium.common.exceptions import TimeoutException
 import time
-import traceback
 import sqlite3
 import json
 
@@ -46,7 +44,8 @@ class Parser:
         self.server.start()
         try:
             self.proxy = self.server.create_proxy()
-        except Exception:
+        except Exception as ex:
+            print(ex)
             print('[WARNING] Сервер уже запущен')
             self.proxy = self.server.create_proxy()
         profile = webdriver.FirefoxProfile()
@@ -143,8 +142,8 @@ class Parser:
                 p = int(max_page)
                 while p != 1:
                     print('[INFO]Страница ' + str(p))
-                    year_page_add = self.main_page + first_page['href'] + \
-                                    '#/page/%s/' % str(p)
+                    year_page_add = self.main_page + first_page['href'] + '#/page/%s/' % str(p)
+
                     if self.check_champ_in_db(year_page_add):
                         p -= 1
                         continue
@@ -155,8 +154,6 @@ class Parser:
     def pars(self, href_champ, sport):
         """
         Парсинг
-        :param championship:
-        список тегов чемпионатов
         :return:
         """
         with open('savepoint', 'w', encoding='utf8') as savepointfile:  # сохранение чемпионата
@@ -208,8 +205,7 @@ class Parser:
                     p = int(max_page)
                     while p != 1:
                         print('[INFO]Страница ' + str(p))
-                        year_page_add = self.main_page + page['href'] +\
-                                        '#/page/%s/' % str(p)
+                        year_page_add = self.main_page + page['href'] + '#/page/%s/' % str(p)
                         if self.check_champ_in_db(year_page_add):
                             p -= 1
                             continue
@@ -398,23 +394,24 @@ class Parser:
         result = self.get_result(url)
         date = self.get_date(url)
         headers = {
-             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0',
-             'referer': url
-         }
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0',
+            'referer': url
+        }
         # время запроса для подключения к API
         timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
         # итоговый запрос
         req_for_time = request_odds_url + timer_reg
         odds_response = '"E":"notAllowed"'
+        print(req_for_time)
         while '"E":"notAllowed"' in odds_response:
-             print(req_for_time)
-             r = requests.get(req_for_time, headers=headers)
-             odds_response = r.text
-             if '"E":"notAllowed"' in odds_response:
-                 print('notAllowed')
-                 request_odds_url = self.get_odds_response(url)
-                 timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
-                 req_for_time = request_odds_url + timer_reg
+            print(req_for_time)
+            r = requests.get(req_for_time, headers=headers)
+            odds_response = r.text
+            if '"E":"notAllowed"' in odds_response:
+                print('notAllowed')
+                request_odds_url = self.get_odds_response(url)
+                timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
+                req_for_time = request_odds_url + timer_reg
         if '"odds":' in odds_response:
             out_odds = self.clear_response_odds(odds_response)
             end = time.time()
@@ -430,13 +427,13 @@ class Parser:
         :return:
         """
         null = None
+        print(null)
         left_cut1 = odds_response.split('"opening_odds":', 1)
         right_cut1 = left_cut1[1].split(',"opening_change_time":', 1)
         left_cut2 = odds_response.split('"odds":', 1)
         right_cut2 = left_cut2[1].split(',"movement":', 1)
         dict_openodds = eval(right_cut1[0])
         dict_odds = eval(right_cut2[0])
-        #print(dict_openodds)
         for bk_id, odds in dict_openodds.items():
             if type(odds) is list:
                 for i in range(0, len(odds)):
@@ -468,7 +465,7 @@ class Parser:
         print(str(out_dict_odds))
         return out_dict_odds
 
-    def add_game_in_db(self,*args):
+    def add_game_in_db(self, *args):
         """
         Добавление игры в базу
         :param args:
@@ -564,7 +561,8 @@ class Parser:
         cur.close()
         con.close()
 
-    def add_bookmaker_in_db(self, name: str, cur, con):
+    @staticmethod
+    def add_bookmaker_in_db(name: str, cur, con):
         """
         Добавление букмекера в базу данных
         :param name:
@@ -579,17 +577,8 @@ class Parser:
         cur.execute(query)
         data_name = [name[1] for name in cur.fetchall()]
         if name in data_name:
-            # print('[INFO] %s букмекер уже есть в базе' % name)
             return
         else:
             cur.execute('INSERT INTO bookmaker (name) VALUES(?)', [name])
             con.commit()
             print('[INFO] Букмекер %s добавлен в базу' % name)
-
-
-parser = Parser()
-#parser.get_champ_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/#/page/4/', 4)
-parser.start('soccer', continue_parsing=True)
-#parser.continue_parsing('soccer')
-#parser.get_match_data('https://www.oddsportal.com/soccer/moldova/moldovan-cup-2012-2013/dacia-chisinau-veris-chisinau-zTuQkK0d/')
-#parser.get_result('https://www.oddsportal.com/soccer/asia/gulf-cup-of-nations/kuwait-oman-thHnGRUn/')

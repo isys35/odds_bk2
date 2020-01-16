@@ -93,6 +93,64 @@ class Parser:
             self.server.stop()
             self.browser.quit()
 
+    def pars_last_year(self, href_champ, sport):
+        """
+        Парсинг по последнему году
+        :param href_champ:
+        href чемпионата
+        :param sport:
+        спорт
+        :return:
+        """
+        self.out_match_data = {}
+        years_menu = None
+        if sport == 'soccer':
+            if href_champ.split('/')[1] == sport:
+                champ_request_allyears = requests.get(self.main_page + href_champ, headers=self.headers)
+                html_championship = BS(champ_request_allyears.content, 'html.parser')
+                years_menu = html_championship.select('.main-menu2.main-menu-gray')
+        first_page = None
+        if years_menu:
+            years_pages = years_menu[0].select('a')
+            first_page = years_pages[0]['href']
+            self.browser.get(self.main_page + first_page)
+            content_first_page = self.browser.page_source
+            soup_champ = BS(content_first_page, 'html.parser')
+            string_sport = soup_champ.select('#breadcrumb')[0].select('a')[1].text
+            self.out_match_data['sport'] = string_sport
+            country = soup_champ.select('#breadcrumb')[0].select('a')[2].text
+            self.out_match_data['country'] = country
+            string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
+            self.out_match_data['champ'] = string_champ
+            print('[INFO] Страна ' + country)
+            print('[INFO] Чемпионат ' + string_champ)
+            if self.check_champ_in_db(self.main_page + first_page):
+                print('[INFO] Чемпионат полностью в базе')
+                return
+            first_page = years_pages[0]
+            print('[INFO] Чемпионат не полностью в базе')
+        if first_page:
+            year_page = self.main_page + first_page['href']
+            print('[INFO] Страница с годом ' + first_page.text + ' ' + year_page)
+            if year_page != self.browser.current_url:
+                self.browser.get(year_page)
+            soup_pagination = BS(self.browser.page_source, 'html.parser')
+            pagination = soup_pagination.select('#pagination')
+            if not pagination:
+                self.get_champ_data_in_year(year_page)
+            else:
+                max_page = pagination[0].select('a')[-1]['x-page']
+                p = int(max_page)
+                while p != 1:
+                    print('[INFO]Страница ' + str(p))
+                    year_page_add = self.main_page + first_page['href'] + \
+                                    '#/page/%s/' % str(p)
+                    if self.check_champ_in_db(year_page_add):
+                        p -= 1
+                        continue
+                    self.get_champ_data_in_year(year_page_add, p)
+                    p -= 1
+                self.get_champ_data_in_year(year_page)
 
     def pars(self, href_champ, sport):
         """
@@ -410,48 +468,6 @@ class Parser:
         print(str(out_dict_odds))
         return out_dict_odds
 
-    def pars_last_year(self, lig):
-        if len(lig.select('a')) > 0:
-            href_liga = lig.select('a')[0]['href']
-            if href_liga.split('/')[1] == 'soccer':
-                liga_request_allyears = requests.get('https://www.oddsportal.com' + href_liga, headers=self.headers)
-                soup_liga = BS(liga_request_allyears.content, 'html.parser')
-                years_menu = soup_liga.select('.main-menu2.main-menu-gray')
-                if years_menu:
-                    years_pages = years_menu[0].select('a')
-                    self.browser.get('https://www.oddsportal.com' + years_pages[0]['href'])
-                    content_browser = self.browser.page_source
-                    soup_liga = BS(content_browser, 'html.parser')
-                    breadcrump = soup_liga.select('#breadcrumb')
-                    breadcrump_a = breadcrump[0].select('a')
-                    sport = breadcrump_a[1].text
-                    country = breadcrump_a[2].text
-                    liga = breadcrump_a[3].text
-                    print('[INFO] Страна ' + country)
-                    print('[INFO] Чемпионат ' + liga)
-                    first_year_page = 'https://www.oddsportal.com' + years_pages[0]['href']
-                    if self.check_champ_in_db(first_year_page):
-                        print('[INFO] Чемпионат есть в базе')
-                        return
-                    print('[INFO] Страница с годом ' + first_year_page)
-                    page_pagination = BS(self.browser.page_source, 'html.parser')
-                    pagination = page_pagination.select('#pagination')
-                    try:
-                        if len(pagination) == 0:
-                            self.get_liga_data_in_year(first_year_page, sport, country, liga)
-                        else:
-                            max_page = pagination[0].select('a')[-1]['x-page']
-                            p = int(max_page)
-                            while p != 1:
-                                print('[INFO]Страница ' + str(p))
-                                year_page_add = 'https://www.oddsportal.com' + years_pages[0][
-                                    'href'] + '#/page/%s/' % str(p)
-                                self.get_liga_data_in_year(year_page_add, sport, country, liga)
-                                p -= 1
-                            self.get_liga_data_in_year(first_year_page, sport, country, liga)
-                    except TimeoutException:
-                        print('[EROR] TimeoutException')
-
     def add_game_in_db(self,*args):
         """
         Добавление игры в базу
@@ -488,6 +504,10 @@ class Parser:
         con.close()
 
     def update_label3(self):
+        """
+        Обновление счётчика в интерфейсе
+        :return:
+        """
         con = sqlite3.connect(self.db)
         cur = con.cursor()
         query = 'SELECT * FROM game'

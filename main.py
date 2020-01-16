@@ -13,6 +13,16 @@ import webbrowser
 import json
 
 
+def eror_handler(func):
+    def wrapper(self):
+        try:
+            func(self)
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
+    return wrapper
+
+
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -26,8 +36,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.update_label3()
         self.matches_finded = []
         self.games = []
-        # self.comboBox_2.popupAboutToBeShown.connect(self.update_combobox)
-        # self.pushButton_3.clicked.connect(self.filtered)
         self.pushButton_2.clicked.connect(self.open_dialog)
         self.pushButton_4.clicked.connect(self.start_thread_parsing)
         self.pushButton_3.clicked.connect(self.continue_thread_parsing)
@@ -68,17 +76,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 label.setPixmap(QtGui.QPixmap(self.logotypes_path[bookmaker[1]]))
                 self.formLayout_2.setWidget(data_bookmaker_checklist.index(bookmaker),
                                             QtWidgets.QFormLayout.LabelRole, label)
-            checkBox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
-            checkBox.setText('{} ({})'.format(str(bookmaker[1]), str(bookmaker[0])))
-            self.checkboxlist.append(checkBox)
+            check_box = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+            check_box.setText('{} ({})'.format(str(bookmaker[1]), str(bookmaker[0])))
+            self.checkboxlist.append(check_box)
             self.formLayout_2.setWidget(data_bookmaker_checklist.index(bookmaker),
-                                        QtWidgets.QFormLayout.FieldRole, checkBox)
+                                        QtWidgets.QFormLayout.FieldRole, check_box)
             self.verticalLayout.addLayout(self.formLayout_2)
         for check_box in self.checkboxlist:
             check_box.clicked.connect(lambda state, chck=check_box: self.unselect_allcheckbox(chck))
         self.pushButton.clicked.connect(self.find_match)
-
-
 
     def update_label3(self):
         """
@@ -94,6 +100,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur.close()
         con.close()
 
+    @eror_handler
     def find_match(self):
         """
         поиск совпадений
@@ -174,10 +181,12 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             self.label_5.setText('X:')
             self.label_7.setText('П2:')
         self.update_table()
-        con.close()
         cur.close()
+        con.close()
 
-    def get_point_result(self, result: str):
+
+    @staticmethod
+    def get_point_result(result: str):
         """
         Получить результат матчей в числах
         :param result:
@@ -207,17 +216,27 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             return p1, p2
 
     def unselect_allcheckbox(self, check_box):
+        """
+        снять выеделение со всех check_box
+        :param check_box:
+        :return:
+        """
         for check in self.checkboxlist:
             if check != check_box:
                 check.setChecked(False)
 
     def open_dialog(self):
+        """
+        Открыть диалоговое окно
+        :return:
+        """
         try:
             dialog = Dialog()
             dialog.games = self.games
             dialog.update_games(self.games)
             dialog.exec_()
-        except Exception:
+        except Exception as ex:
+            print(ex)
             print(traceback.format_exc())
 
     def start_thread_parsing(self):
@@ -288,7 +307,12 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         self.lineEdit_3.textChanged.connect(lambda: self.change_champ(self.lineEdit_3.text()))
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_page_in_browser(row, column))
 
-    def update_games(self, games):
+    def update_table_games(self, games):
+        """
+        Обновить таблицу с играми
+        :param games:
+        :return:
+        """
         self.tableWidget.clearContents()
         self.tableWidget.setRowCount(len(games))
         for game in games:
@@ -296,38 +320,38 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             item_index.setText(str(games.index(game)))
             self.tableWidget.setVerticalHeaderItem(games.index(game), item_index)
             item_command1 = QtWidgets.QTableWidgetItem()
-            item_command1.setText(game[1])
+            item_command1.setText(game['command1'])
             self.tableWidget.setItem(games.index(game), 5, item_command1)
             item_command2 = QtWidgets.QTableWidgetItem()
-            item_command2.setText(game[2])
+            item_command2.setText(game['command2'])
             self.tableWidget.setItem(games.index(game), 6, item_command2)
             item_url = QtWidgets.QTableWidgetItem()
-            item_url.setText(game[3])
+            item_url.setText(game['url'])
             self.tableWidget.setItem(games.index(game), 8, item_url)
             item_date = QtWidgets.QTableWidgetItem()
-            if game[4]:
-                item_date.setText(game[4].rsplit(' ', 1)[0])
+            if game['date']:
+                item_date.setText(game['date'].rsplit(' ', 1)[0])
             self.tableWidget.setItem(games.index(game), 1, item_date)
             self.tableWidget.resizeColumnToContents(1)
             item_year = QtWidgets.QTableWidgetItem()
-            if game[4]:
-                item_year.setText(game[4].rsplit(' ', 1)[1])
+            if game['date']:
+                item_year.setText(game['date'].rsplit(' ', 1)[1])
             self.tableWidget.setItem(games.index(game), 0, item_year)
             self.tableWidget.resizeColumnToContents(0)
             item_time = QtWidgets.QTableWidgetItem()
-            item_time.setText(game[5])
+            item_time.setText(game['time'])
             self.tableWidget.setItem(games.index(game), 2, item_time)
             self.tableWidget.resizeColumnToContents(2)
             item_result = QtWidgets.QTableWidgetItem()
-            item_result.setText(game[6])
+            item_result.setText(game['result'])
             self.tableWidget.setItem(games.index(game), 7, item_result)
             self.tableWidget.resizeColumnToContents(7)
             item_country = QtWidgets.QTableWidgetItem()
-            item_country.setText(game[8])
+            item_country.setText(game['country'])
             self.tableWidget.setItem(games.index(game), 3, item_country)
             self.tableWidget.resizeColumnToContents(3)
             item_liga = QtWidgets.QTableWidgetItem()
-            item_liga.setText(game[9])
+            item_liga.setText(game['champ'])
             self.tableWidget.setItem(games.index(game), 4, item_liga)
             item_click = QtWidgets.QTableWidgetItem()
             item_click.setText('Перейти на сайт')
@@ -340,7 +364,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             year_in_game = game[4].split(' ')[-1]
             if year in year_in_game:
                 games_filt.append(game)
-        self.update_games(games_filt)
+        self.update__table_games(games_filt)
 
     def change_country(self, country):
         games_filt = []
@@ -348,7 +372,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             country_in_game = game[8].lower()
             if country.lower() in country_in_game:
                 games_filt.append(game)
-        self.update_games(games_filt)
+        self.update_table_games(games_filt)
 
     def change_champ(self, champ):
         games_filt = []
@@ -356,7 +380,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             champ_in_game = game[9].lower()
             if champ.lower() in champ_in_game:
                 games_filt.append(game)
-        self.update_games(games_filt)
+        self.update_table_games(games_filt)
 
     def open_page_in_browser(self, row, column):
         if column == 9:

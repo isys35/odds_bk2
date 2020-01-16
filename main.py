@@ -225,19 +225,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             if check != check_box:
                 check.setChecked(False)
 
+    @eror_handler
     def open_dialog(self):
         """
         Открыть диалоговое окно
         :return:
         """
-        try:
-            dialog = Dialog()
-            dialog.games = self.games
-            dialog.update_games(self.games)
-            dialog.exec_()
-        except Exception as ex:
-            print(ex)
-            print(traceback.format_exc())
+        dialog = Dialog()
+        dialog.games = self.games
+        dialog.update_table_games(self.games)
+        dialog.exec_()
 
     def start_thread_parsing(self):
         self.parsing = ParsingThread(self.label_8, self.label_9, self.label_11)
@@ -302,9 +299,9 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         super().__init__()
         self.setupUi(self)
         self.games = []
-        self.lineEdit.textChanged.connect(lambda: self.change_year(self.lineEdit.text()))
-        self.lineEdit_2.textChanged.connect(lambda: self.change_country(self.lineEdit_2.text()))
-        self.lineEdit_3.textChanged.connect(lambda: self.change_champ(self.lineEdit_3.text()))
+        self.lineEdit.textChanged.connect(self.change_filter)
+        self.lineEdit_2.textChanged.connect(self.change_filter)
+        self.lineEdit_3.textChanged.connect(self.change_filter)
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_page_in_browser(row, column))
 
     def update_table_games(self, games):
@@ -358,27 +355,15 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.tableWidget.setItem(games.index(game), 9, item_click)
             self.tableWidget.resizeColumnToContents(9)
 
-    def change_year(self, year):
+    def change_filter(self):
         games_filt = []
         for game in self.games:
-            year_in_game = game[4].split(' ')[-1]
-            if year in year_in_game:
-                games_filt.append(game)
-        self.update__table_games(games_filt)
-
-    def change_country(self, country):
-        games_filt = []
-        for game in self.games:
-            country_in_game = game[8].lower()
-            if country.lower() in country_in_game:
-                games_filt.append(game)
-        self.update_table_games(games_filt)
-
-    def change_champ(self, champ):
-        games_filt = []
-        for game in self.games:
-            champ_in_game = game[9].lower()
-            if champ.lower() in champ_in_game:
+            year_in_game = game['date'].split(' ')[-1]
+            country_in_game = game['country'].lower()
+            champ_in_game = game['champ'].lower()
+            if self.lineEdit.text() in year_in_game \
+                    and self.lineEdit_2.text() in country_in_game \
+                    and self.lineEdit_3.text() in champ_in_game:
                 games_filt.append(game)
         self.update_table_games(games_filt)
 

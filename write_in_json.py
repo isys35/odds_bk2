@@ -6270,7 +6270,79 @@ bookmakersData = {
                 "isNew": False
             }
         }
-print('[INFO] Записать bookmakersData в json')
-with open("bookmakersData.json", "w") as write_file:
-    json.dump(bookmakersData, write_file)
+logotypes_path = {
+            '18bet': 'logotypes/18bet.png',
+            '1xBet': 'logotypes/1xbet.png',
+            '1xStavka.ru': 'logotypes/1xstavka.png',
+            'Asianodds': 'logotypes/assianodds.png',
+            'bet-at-home': 'logotypes/bet_at_home.png',
+            'bet365': 'logotypes/bet365.png',
+            'bet365.it': 'logotypes/bet365.png',
+            'Bethard': 'logotypes/bethard.png',
+            'bwin': 'logotypes/bwin.png',
+            'bwin.es': 'logotypes/bwin.png',
+            'bwin.fr': 'logotypes/bwin.png',
+            'bwin.it': 'logotypes/bwin.png',
+            'Coolbet': 'logotypes/coolbet.png',
+            'Marathonbet': 'logotypes/marathon_bet.png',
+            'MrGreen': 'logotypes/mrgreen.png',
+            'Pinnacle': 'logotypes/pinnacle.png',
+            'Unibet': 'logotypes/unibet.png',
+            'Unibet.it': 'logotypes/unibet.png',
+            'Unibet.fr': 'logotypes/unibet.png',
+            'William Hill': 'logotypes/willian_hill.png',
+            'WilliamHill.it': 'logotypes/willian_hill.png',
+            'Chance.cz': 'logotypes/chance.png',
+            'Tipsport.sk': 'logotypes/tipsport.png',
+            'Tipsport.cz': 'logotypes/tipsport.png',
+            'Betago': 'logotypes/betago.png',
+            'Expekt': 'logotypes/expekt.png',
+            'Betclic': 'logotypes/betclic.png',
+            'Betclic.fr': 'logotypes/betclic.png',
+            'STS.pl': 'logotypes/sts.png',
+            'Interwetten': 'logotypes/interwetten.png',
+            'Winline.ru': 'logotypes/winline.png',
+            'Interwetten.es': 'logotypes/interwetten.png',
+            'Leonbets': 'logotypes/leon.png',
+            'Leon.ru': 'logotypes/leonru.png',
+            'Oddsring': 'logotypes/oddsring.png',
+            'Betfair': 'logotypes/betfair.png',
+            'Intertops': 'logotypes/iterlops.png',
+            'Jetbull': 'logotypes/jetbull.png',
+            'BetVictor': 'logotypes/betvictor.png',
+            'NordicBet': 'logotypes/nordicbet.png',
+            'Betsson': 'logotypes/betsson.png',
+            'Betsafe': 'logotypes/belsafe.png',
+            'Betway': 'logotypes/betway.png',
+            '10Bet': 'logotypes/IO.png',
+            'ComeOn': 'logotypes/comeon.png',
+            'SAZKAbet.cz': 'logotypes/sazkabet.png',
+            'BoyleSports': 'logotypes/boukesports.png',
+            'GGBET': 'logotypes/ggbet.png',
+            'youwin': 'logotypes/youwin.png',
+            '188BET': 'logotypes/188bet.png',
+            'SBOBET': 'logotypes/sbobet.png',
+            'Dafabet': 'logotypes/dafabet.png',
+            'iFortuna.cz': 'logotypes/fortuna.png',
+            'eFortuna.pl': 'logotypes/fortuna.png',
+            'iFortuna.sk': 'logotypes/fortuna.png',
+            'Betfair Exchange': 'logotypes/betfair.png',
+            '888sport': 'logotypes/888.png',
+            'Titanbet': 'logotypes/titanbet.png',
+            'BetJOE': 'logotypes/betjoe.png',
+            'Betfred': 'logotypes/betjoe.png',
+            'France Pari': 'logotypes/france-pari.png',
+            'Matchbook': 'logotypes/matchbook.png',
+            'Sportingbet': 'logotypes/sportingbet.png',
+            'Sportium.es': 'logotypes/sportium.png'
+        }
+# print('[INFO] Записать bookmakersData в json')
+# with open("bookmakersData.json", "w") as write_file:
+#     json.dump(bookmakersData, write_file)
+# print('[INFO] Завершено')
+
+
+print('[INFO] Записать logotypepath в json')
+with open("logotypepath.json", "w") as write_file:
+    json.dump(logotypes_path, write_file)
 print('[INFO] Завершено')

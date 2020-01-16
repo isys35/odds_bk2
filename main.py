@@ -8,7 +8,7 @@ from PyQt5.QtCore import QThread
 import sqlite3
 import mainwindow
 import dialog
-from parser import Parser
+from parser_odds import Parser
 import webbrowser
 import json
 
@@ -16,11 +16,10 @@ import json
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
+        self.setupUi(self)
         self.db = 'oddsportal.db'
         self.parsing = False
         self.logotypes_path = self.get_logotype_path()
-        self.setupUi(self)
-        self.con = None
         self.data_bookmaker = []
         self.checkboxlist = []
         self.update_bookmakers()
@@ -42,9 +41,13 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             return json.load(read_file)
 
     def update_bookmakers(self):
+        """
+        Обновление окна букмекеров
+        :return:
+        """
         print('[INFO] Берём из базы букмекерские конторы')
-        self.con = sqlite3.connect(self.db)
-        cur = self.con.cursor()
+        con = sqlite3.connect(self.db)
+        cur = con.cursor()
         query = 'SELECT * FROM bookmaker'
         cur.execute(query)
         self.data_bookmaker = [[bookmaker[0], bookmaker[1]] for bookmaker in cur.fetchall()]
@@ -56,6 +59,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             count_bookmaker_match = len(cur.fetchall())
             data_bookmaker_checklist.append([count_bookmaker_match, bookmaker[1]])
         cur.close()
+        con.close()
         data_bookmaker_checklist.sort(reverse=True)
         print('[INFO] Строим виджеты CheckBox')
         self.checkboxlist = []
@@ -66,7 +70,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 self.formLayout_2.setWidget(data_bookmaker_checklist.index(bookmaker),
                                             QtWidgets.QFormLayout.LabelRole, label)
             checkBox = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
-            checkBox.setText(bookmaker[1] + ' (' + str(bookmaker[0]) + ')')
+            checkBox.setText('{} ({})'.format(str(bookmaker[1]), str(bookmaker[0])))
             self.checkboxlist.append(checkBox)
             self.formLayout_2.setWidget(data_bookmaker_checklist.index(bookmaker),
                                         QtWidgets.QFormLayout.FieldRole, checkBox)
@@ -75,7 +79,13 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             check_box.clicked.connect(lambda state, chck=check_box: self.unselect_allcheckbox(chck))
         self.pushButton.clicked.connect(self.find_match)
 
+
+
     def update_label3(self):
+        """
+        Обновление счётчика " всего игр в базе"
+        :return:
+        """
         con = sqlite3.connect(self.db)
         cur = con.cursor()
         query = 'SELECT * FROM game'
@@ -86,6 +96,10 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         con.close()
 
     def find_match(self):
+        """
+        поиск совпадений
+        :return:
+        """
         select_bk = None
         for check_box in self.checkboxlist:
             if check_box.isChecked():
@@ -102,8 +116,12 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         p1 = self.lineEdit.text()
         x = self.lineEdit_2.text()
         p2 = self.lineEdit_3.text()
+        if not p1 or not x or not p2:
+            print('[WARNING] Введенны не все коэф-ты')
+            return
         print('[INFO] Поиск в базе игры с букмекером {} П1 = {} X = {} П2 = {}'.format(select_bk, p1, x, p2))
-        cur = self.con.cursor()
+        con = sqlite3.connect(self.db)
+        cur = con.cursor()
         query = 'SELECT game_id FROM bet WHERE bookmaker_id = ? AND p1 = ? AND x = ? AND p2 = ?'
         cur.execute(query, [bookmaker_id, p1, x, p2])
         self.matches_finded = []
@@ -117,49 +135,55 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             for game_id in self.matches_finded:
                 query = 'SELECT * FROM game WHERE id = ?'
                 cur.execute(query, [game_id])
-                game_data = [el for el in cur.fetchone()]
-                self.games.append(game_data)
-        try:
+                data_list = cur.fetchone()
+                data_dict = {'id': data_list[0],
+                             'command1': data_list[1],
+                             'command2': data_list[2],
+                             'url': data_list[3],
+                             'date': data_list[4],
+                             'time': data_list[5],
+                             'result': data_list[6],
+                             'sport': data_list[7],
+                             'country': data_list[8],
+                             'champ': data_list[9]}
+
+                self.games.append(data_dict)
             self.update_table()
             p1_out = 0
             p2_out = 0
             x_out = 0
-            if self.games:
-                for game in self.games:
-                    result = game[6]
-                    p1_r, p2_r = self.result_cleaning(result)
-                    if float(p1_r) > float(p2_r):
-                        p1_out += 1
-                    elif float(p1_r) < float(p2_r):
-                        p2_out += 1
-                    elif float(p1_r) == float(p2_r):
-                        x_out += 1
-            all_out = p1_out + p2_out + x_out
-            p1_out_ = 0
-            x_out_ = 0
-            p2_out_ = 0
-            if all_out:
-                p1_out_ = 100 * p1_out / all_out
-                p2_out_ = 100 * p2_out / all_out
-                x_out_ = 100 * x_out / all_out
-            self.label_6.setText('П1: ' + str(round(p1_out_)) + '% (' + str(round(p1_out)) + ')')
-            self.label_5.setText('X: ' + str(round(x_out_)) + '% (' + str(round(x_out)) + ')')
-            self.label_7.setText('П2: ' + str(round(p2_out_)) + '% (' + str(round(p2_out)) + ')')
-            # self.comboBox.clear()
-            countrys = []
-            self.liga_dict = {}
-            for game in self.games:
-                if game[8] not in countrys:
-                    countrys.append(game[8])
-                if game[8] not in self.liga_dict:
-                    self.liga_dict[game[8]] = [game[9]]
-                else:
-                    if game[9] not in self.liga_dict[game[8]]:
-                        self.liga_dict[game[8]].append(game[9])
-            # self.comboBox.addItems(countrys)
-            cur.close()
-        except Exception:
-            print(traceback.format_exc())
+        #     for game in self.games:
+        #         result = game[6]
+        #         p1_r, p2_r = self.result_cleaning(result)
+        #         if float(p1_r) > float(p2_r):
+        #             p1_out += 1
+        #         elif float(p1_r) < float(p2_r):
+        #             p2_out += 1
+        #         elif float(p1_r) == float(p2_r):
+        #             x_out += 1
+        #     all_out = p1_out + p2_out + x_out
+        #     p1_out_ = 0
+        #     x_out_ = 0
+        #     p2_out_ = 0
+        #     if all_out:
+        #         p1_out_ = 100 * p1_out / all_out
+        #         p2_out_ = 100 * p2_out / all_out
+        #         x_out_ = 100 * x_out / all_out
+        #     self.label_6.setText('П1: ' + str(round(p1_out_)) + '% (' + str(round(p1_out)) + ')')
+        #     self.label_5.setText('X: ' + str(round(x_out_)) + '% (' + str(round(x_out)) + ')')
+        #     self.label_7.setText('П2: ' + str(round(p2_out_)) + '% (' + str(round(p2_out)) + ')')
+        #     countrys = []
+        #     self.liga_dict = {}
+        #     for game in self.games:
+        #         if game[8] not in countrys:
+        #             countrys.append(game[8])
+        #         if game[8] not in self.liga_dict:
+        #             self.liga_dict[game[8]] = [game[9]]
+        #         else:
+        #             if game[9] not in self.liga_dict[game[8]]:
+        #                 self.liga_dict[game[8]].append(game[9])
+        # con.close()
+        # cur.close()
 
     def result_cleaning(self, result: str):
         if 'awarded' in result:
@@ -212,25 +236,29 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.parsing.start()
 
     def update_table(self):
+        """
+        Обновление таблицы
+        :return:
+        """
         self.tableWidget.clearContents()
         self.tableWidget.setRowCount(len(self.games))
         for game in self.games:
             item_command1 = QtWidgets.QTableWidgetItem()
-            item_command1.setText(game[1])
+            item_command1.setText(game['command1'])
             self.tableWidget.setItem(self.games.index(game), 2, item_command1)
             item_command2 = QtWidgets.QTableWidgetItem()
-            item_command2.setText(game[2])
+            item_command2.setText(game['command2'])
             self.tableWidget.setItem(self.games.index(game), 3, item_command2)
             item_date = QtWidgets.QTableWidgetItem()
-            item_date.setText(game[4])
+            item_date.setText(game['date'])
             self.tableWidget.setItem(self.games.index(game), 0, item_date)
             self.tableWidget.resizeColumnToContents(2)
             item_country = QtWidgets.QTableWidgetItem()
-            item_country.setText(game[8])
+            item_country.setText(game['country'])
             self.tableWidget.setItem(self.games.index(game), 1, item_country)
             self.tableWidget.resizeColumnToContents(3)
             item_result = QtWidgets.QTableWidgetItem()
-            item_result.setText(game[6])
+            item_result.setText(game['result'])
             self.tableWidget.setItem(self.games.index(game), 4, item_result)
             self.tableWidget.resizeColumnToContents(4)
             item_clicked = QtWidgets.QTableWidgetItem()
@@ -239,8 +267,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             self.tableWidget.resizeColumnToContents(5)
 
     def open_page_in_browser(self, row, column):
+        """
+        Открыть игру в браузере
+        :param row:
+        ряд, а также номер игры в листе self.games
+        :param column:
+        колонка на которую следует нажать
+        :return:
+        """
         if column == 5:
-            url = self.games[row][3]
+            url = self.games[row]['url']
             print(url)
             webbrowser.open(url)
 

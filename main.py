@@ -146,12 +146,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                              'sport': data_list[7],
                              'country': data_list[8],
                              'champ': data_list[9]}
-
                 self.games.append(data_dict)
-            self.update_table()
             p1_out = 0
             p2_out = 0
             x_out = 0
+            for game in self.games:
+                result = game['result']
+                p1_r, p2_r = self.get_point_result(result)
+        self.update_table()
+
         #     for game in self.games:
         #         result = game[6]
         #         p1_r, p2_r = self.result_cleaning(result)
@@ -185,24 +188,29 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         # con.close()
         # cur.close()
 
-    def result_cleaning(self, result: str):
+    def get_point_result(self, result: str):
+        """
+        Получить результат матчей в числах
+        :param result:
+        Результат из базы
+        :return:
+        """
         if 'awarded' in result:
             return 0, 0
-        if 'penalties' in result:
-            result_out = result.replace('Final result ', '').split(' ')[0]
-            p1 = result_out.split(':')[0]
-            p2 = result_out.split(':')[1]
-            return p1, p2
         if '(' in result:
-            t1 = result.split('(')[1].replace(')', ' ').split(',')[0]
-            t2 = result.split('(')[1].replace(')', ' ').split(',')[1]
-            t1_p1 = t1.split(':')[0]
-            t1_p2 = t1.split(':')[1]
-            t2_p1 = t2.split(':')[0]
-            t2_p2 = t2.split(':')[1]
-            p1 = float(t1_p1) + float(t2_p1)
-            p2 = float(t1_p2) + float(t2_p2)
-            return p1, p2
+            time_results = result.split('(')[1].split(')')[0].split(', ')
+            if len(time_results) == 2:
+                t1_p1 = time_results[0].split(':')[0]
+                t1_p2 = time_results[0].split(':')[1]
+                t2_p1 = time_results[1].split(':')[0]
+                t2_p2 = time_results[1].split(':')[1]
+                p1 = float(t1_p1) + float(t2_p1)
+                p2 = float(t1_p2) + float(t2_p2)
+                return p1, p2
+            elif len(time_results) == 1:
+                p1 = time_results[0].split(':')[0]
+                p2 = time_results[0].split(':')[1]
+                return float(p1), float(p2)
         elif 'Final result ' in result:
             result_out = result.replace('Final result ', '').split(' ')[0]
             p1 = result_out.split(':')[0]

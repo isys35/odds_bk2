@@ -26,7 +26,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.update_label3()
         self.matches_finded = []
         self.games = []
-        self.liga_dict = {}
         # self.comboBox_2.popupAboutToBeShown.connect(self.update_combobox)
         # self.pushButton_3.clicked.connect(self.filtered)
         self.pushButton_2.clicked.connect(self.open_dialog)
@@ -153,40 +152,30 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             for game in self.games:
                 result = game['result']
                 p1_r, p2_r = self.get_point_result(result)
+                if float(p1_r) > float(p2_r):
+                    p1_out += 1
+                elif float(p1_r) < float(p2_r):
+                    p2_out += 1
+                elif float(p1_r) == float(p2_r):
+                    x_out += 1
+            all_out = p1_out + p2_out + x_out
+            p1_out_percent = 0
+            x_out_percent = 0
+            p2_out_percent = 0
+            if all_out:
+                p1_out_percent = 100 * p1_out / all_out
+                p2_out_percent = 100 * p2_out / all_out
+                x_out_percent = 100 * x_out / all_out
+            self.label_6.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
+            self.label_5.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
+            self.label_7.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
+        else:
+            self.label_6.setText('П1:')
+            self.label_5.setText('X:')
+            self.label_7.setText('П2:')
         self.update_table()
-
-        #     for game in self.games:
-        #         result = game[6]
-        #         p1_r, p2_r = self.result_cleaning(result)
-        #         if float(p1_r) > float(p2_r):
-        #             p1_out += 1
-        #         elif float(p1_r) < float(p2_r):
-        #             p2_out += 1
-        #         elif float(p1_r) == float(p2_r):
-        #             x_out += 1
-        #     all_out = p1_out + p2_out + x_out
-        #     p1_out_ = 0
-        #     x_out_ = 0
-        #     p2_out_ = 0
-        #     if all_out:
-        #         p1_out_ = 100 * p1_out / all_out
-        #         p2_out_ = 100 * p2_out / all_out
-        #         x_out_ = 100 * x_out / all_out
-        #     self.label_6.setText('П1: ' + str(round(p1_out_)) + '% (' + str(round(p1_out)) + ')')
-        #     self.label_5.setText('X: ' + str(round(x_out_)) + '% (' + str(round(x_out)) + ')')
-        #     self.label_7.setText('П2: ' + str(round(p2_out_)) + '% (' + str(round(p2_out)) + ')')
-        #     countrys = []
-        #     self.liga_dict = {}
-        #     for game in self.games:
-        #         if game[8] not in countrys:
-        #             countrys.append(game[8])
-        #         if game[8] not in self.liga_dict:
-        #             self.liga_dict[game[8]] = [game[9]]
-        #         else:
-        #             if game[9] not in self.liga_dict[game[8]]:
-        #                 self.liga_dict[game[8]].append(game[9])
-        # con.close()
-        # cur.close()
+        con.close()
+        cur.close()
 
     def get_point_result(self, result: str):
         """

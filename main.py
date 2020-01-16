@@ -37,10 +37,11 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.matches_finded = []
         self.games = []
         self.pushButton_2.clicked.connect(self.open_dialog)
-        self.pushButton_4.clicked.connect(self.start_thread_parsing)
-        self.pushButton_3.clicked.connect(self.continue_thread_parsing)
-        self.pushButton_5.clicked.connect(self.last_year_thread_parsing)
+        self.pushButton_4.clicked.connect(lambda: self.start_thread_parsing('start'))
+        self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('continue'))
+        self.pushButton_5.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_page_in_browser(row, column))
+        self.parser = Parser(label_info=self.label_8, label_info2=self.label_9, label_info3=self.label_11)
 
     @staticmethod
     def get_logotype_path():
@@ -236,16 +237,13 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         dialog.update_table_games(self.games)
         dialog.exec_()
 
-    def start_thread_parsing(self):
-        self.parsing = ParsingThread(self.label_8, self.label_9, self.label_11)
-        self.parsing.start()
-
-    def continue_thread_parsing(self):
-        self.parsing = ParsingThreadContinue(self.label_8, self.label_9, self.label_11)
-        self.parsing.start()
-
-    def last_year_thread_parsing(self):
-        self.parsing = ParsingThreadLastYear(self.label_8, self.label_9, self.label_11)
+    def start_thread_parsing(self, method):
+        """
+        Запуск потока парсера
+        :param method:
+        :return:
+        """
+        self.parsing = ParsingThread(self.parser, method)
         self.parsing.start()
 
     def update_table(self):
@@ -356,6 +354,10 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.tableWidget.resizeColumnToContents(9)
 
     def change_filter(self):
+        """
+        Фильтр
+        :return:
+        """
         games_filt = []
         for game in self.games:
             year_in_game = game['date'].split(' ')[-1]
@@ -368,70 +370,33 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         self.update_table_games(games_filt)
 
     def open_page_in_browser(self, row, column):
+        """
+        Открывает страницу в браузере
+        :param row:
+        :param column:
+        :return:
+        """
         if column == 9:
             url = self.tableWidget.item(row, 8).text()
             webbrowser.open(url)
 
 
 class ParsingThread(QThread):
-    def __init__(self, label, label2, label3):
+    def __init__(self, parser, method):
         super().__init__()
-        self.parser = None
-        self.label = label
-        self.label2 = label2
-        self.label3 = label3
+        self.parser = parser
+        self.method = method
 
     def update_db(self):
         print('[INFO] Запускаем парсер')
-        self.parser = Parser(self.label, self.label2, self.label3)
-        # noinspection PyBroadException
-        try:
-            self.parser.start()
-        except Exception:
-            print(traceback.format_exc())
-
-    def run(self):
-        self.update_db()
-
-
-class ParsingThreadContinue(QThread):
-    def __init__(self, label, label2, label3):
-        super().__init__()
-        self.parser = None
-        self.label = label
-        self.label2 = label2
-        self.label3 = label3
-
-    def update_db(self):
-        print('[INFO] Запускаем парсер')
-        self.parser = Parser(self.label, self.label2, self.label3)
-        # noinspection PyBroadException
-        try:
-            self.parser.continue_parsing()
-        except Exception:
-            print(traceback.format_exc())
-
-    def run(self):
-        self.update_db()
-
-
-class ParsingThreadLastYear(QThread):
-    def __init__(self, label, label2, label3):
-        super().__init__()
-        self.parser = None
-        self.label = label
-        self.label2 = label2
-        self.label3 = label3
-
-    def update_db(self):
-        print('[INFO] Запускаем парсер')
-        self.parser = Parser(self.label, self.label2, self.label3)
-        # noinspection PyBroadException
-        try:
-            # имена в модули очень похожи, будет путаница
-            self.parser.last_year_pars()
-        except Exception:
-            print(traceback.format_exc())
+        if self.method =='start':
+            self.parser.start('soccer')
+        elif self.method == 'continue':
+            self.parser.start('soccer',continue_parsing=True)
+        elif self.method == 'lastyear':
+            self.parser.start('soccer', last_year=True)
+        else:
+            print('[WARNING] Метод {} не найден '.format(self.method))
 
     def run(self):
         self.update_db()

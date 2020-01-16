@@ -53,10 +53,14 @@ class Parser:
         profile.set_proxy(self.proxy.selenium_proxy())
         self.browser = webdriver.Firefox(firefox_profile=profile, options=options)
 
-    def start(self, sport):
+    def start(self, sport, continue_parsing=False, last_year=False):
         """
         Получение тегов чемпионата
         Запуск парсера
+        :param last_year:
+        парсинг по последнему году
+        :param continue_parsing:
+        продолжать парсинг
         :param sport:
         string спорт
         :return:
@@ -70,52 +74,25 @@ class Parser:
         # список с ссылками на все чемпионаты
         href_championships = [championship.select('a')[0]['href'] for championship in championships
                               if len(championship.select('a')) > 0]
-        for href_championship in href_championships:
-            self.pars(href_championship, sport)
-        if self.browser:
-            self.server.stop()
-            self.browser.quit()
-
-    def continue_parsing(self, sport):
-        """
-        Продолжить парсинг с последнего чемпионата
-        :return:
-        """
-        if not self.browser:
-            self.browser_start()
-        savepointfile = open('savepoint', 'r', encoding='utf8')
-        champ_save = savepointfile.read()
-        savepointfile.close()
-        soccer_url = 'https://www.oddsportal.com/results/#soccer'
-        r = requests.get(soccer_url, headers=self.headers)
-        html = BS(r.content, 'html.parser')
-        championships = html.select('table.table-main.sport')[0].select('td')
-        # список с ссылками на все чемпионаты
-        href_championships = [championship.select('a')[0]['href'] for championship in championships
-                              if len(championship.select('a')) > 0]
-        if champ_save in href_championships:
-            print('[INFO] Последнее сохранение ' + str(champ_save))
-            champ_index = href_championships.index(champ_save)
-            for champ in href_championships[champ_index:]:
-                self.pars(champ, sport)
+        if continue_parsing:
+            savepointfile = open('savepoint', 'r', encoding='utf8')
+            champ_save = savepointfile.read()
+            savepointfile.close()
+            if champ_save in href_championships:
+                print('[INFO] Последнее сохранение ' + str(champ_save))
+                champ_index = href_championships.index(champ_save)
+                for champ in href_championships[champ_index:]:
+                    self.pars(champ, sport)
+        elif last_year:
+            for href_championship in href_championships:
+                self.pars_last_year(href_championship, sport)
         else:
-            print('[INFO] Сохранение не найдено')
+            for href_championship in href_championships:
+                self.pars(href_championship, sport)
         if self.browser:
             self.server.stop()
             self.browser.quit()
 
-    def last_year_pars(self):
-        if not self.browser:
-            self.browser_start()
-        soccer_url = 'https://www.oddsportal.com/results/#soccer'
-        r = requests.get(soccer_url, headers=self.headers)
-        html = BS(r.content, 'html.parser')
-        body = html.select('table.table-main.sport')
-        ligs = body[0].select('td')
-        for lig in ligs:
-            self.pars_last_year(lig)
-        self.server.stop()
-        self.browser.quit()
 
     def pars(self, href_champ, sport):
         """
@@ -592,7 +569,7 @@ class Parser:
 
 parser = Parser()
 #parser.get_champ_data_in_year('https://www.oddsportal.com/soccer/argentina/superliga/results/#/page/4/', 4)
-#parser.start('soccer')
-parser.continue_parsing('soccer')
+parser.start('soccer', continue_parsing=True)
+#parser.continue_parsing('soccer')
 #parser.get_match_data('https://www.oddsportal.com/soccer/moldova/moldovan-cup-2012-2013/dacia-chisinau-veris-chisinau-zTuQkK0d/')
 #parser.get_result('https://www.oddsportal.com/soccer/asia/gulf-cup-of-nations/kuwait-oman-thHnGRUn/')

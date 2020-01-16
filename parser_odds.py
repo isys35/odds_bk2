@@ -507,7 +507,7 @@ class Parser:
         """
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        query = 'SELECT * FROM game'
+        query = 'SELECT id FROM game'
         cur.execute(query)
         all_game_count = len(cur.fetchall())
         self.label_info3.setText('Всего игр в базе: ' + str(all_game_count))

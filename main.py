@@ -419,7 +419,8 @@ def main():
         window = MainApp()
         window.show()
         app.exec_()
-    except Exception:
+    except Exception as ex:
+        print(ex)
         print(traceback.format_exc())
 
 

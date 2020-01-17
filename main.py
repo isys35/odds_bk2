@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import traceback
 import sys
-import sqlite3
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QThread
 import sqlite3
@@ -20,6 +19,18 @@ def eror_handler(func):
         except Exception as ex:
             print(ex)
             print(traceback.format_exc())
+
+    return wrapper
+
+
+def eror_handler_args(func):
+    def wrapper(*args):
+        try:
+            func(*args)
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
+
     return wrapper
 
 
@@ -185,14 +196,14 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur.close()
         con.close()
 
-
     @staticmethod
-    def get_point_result(result: str):
+    def get_point_result(result):
         """
         Получить результат матчей в числах
         :param result:
         Результат из базы
         :return:
+        p1,p2 - количество очков у комманд
         """
         if 'awarded' in result:
             return 0, 0
@@ -207,13 +218,13 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 p2 = float(t1_p2) + float(t2_p2)
                 return p1, p2
             elif len(time_results) == 1:
-                p1 = time_results[0].split(':')[0]
-                p2 = time_results[0].split(':')[1]
-                return float(p1), float(p2)
-        elif 'Final result ' in result:
+                p1 = float(time_results[0].split(':')[0])
+                p2 = float(time_results[0].split(':')[1])
+                return p1, p2
+        if 'Final result ' in result:
             result_out = result.replace('Final result ', '').split(' ')[0]
-            p1 = result_out.split(':')[0]
-            p2 = result_out.split(':')[1]
+            p1 = float(result_out.split(':')[0])
+            p2 = float(result_out.split(':')[1])
             return p1, p2
 
     def unselect_allcheckbox(self, check_box):
@@ -389,10 +400,10 @@ class ParsingThread(QThread):
 
     def update_db(self):
         print('[INFO] Запускаем парсер')
-        if self.method =='start':
+        if self.method == 'start':
             self.parser.start('soccer')
         elif self.method == 'continue':
-            self.parser.start('soccer',continue_parsing=True)
+            self.parser.start('soccer', continue_parsing=True)
         elif self.method == 'lastyear':
             self.parser.start('soccer', last_year=True)
         else:

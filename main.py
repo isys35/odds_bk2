@@ -209,7 +209,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             return 0, 0
         if '(' in result:
             time_results = result.split('(')[1].split(')')[0].split(', ')
-            if len(time_results) == 2:
+            if len(time_results) > 1:
                 t1_p1 = time_results[0].split(':')[0]
                 t1_p2 = time_results[0].split(':')[1]
                 t2_p1 = time_results[1].split(':')[0]

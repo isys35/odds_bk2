@@ -57,14 +57,12 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.checkboxlist = []
         self.update_bookmakers()
         self.update_label3()
-        self.matches_finded = []
-        self.games = []
-        self.pushButton_2.clicked.connect(self.open_dialog)
-        self.pushButton_4.clicked.connect(lambda: self.start_thread_parsing('start'))
-        self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('continue'))
-        self.pushButton_5.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
-        self.tableWidget.cellClicked.connect(lambda row, column: self.open_page_in_browser(row, column))
-        self.parser = Parser(label_info=self.label_8, label_info2=self.label_9, label_info3=self.label_11)
+        self.finded_games = []
+        self.pushButton_5.clicked.connect(self.open_dialog)
+        self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
+        self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
+        self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
+        self.parser = Parser(label_info=self.label_2, label_info2=self.label, label_info3=self.label_3)
 
     @staticmethod
     def get_logotype_path():
@@ -99,17 +97,22 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             label = QtWidgets.QLabel(self.scrollAreaWidgetContents)
             if bookmaker[1] in self.logotypes_path:
                 label.setPixmap(QtGui.QPixmap(self.logotypes_path[bookmaker[1]]))
-                self.formLayout_2.setWidget(data_bookmaker_checklist.index(bookmaker),
+                self.formLayout.setWidget(data_bookmaker_checklist.index(bookmaker),
                                             QtWidgets.QFormLayout.LabelRole, label)
             check_box = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
             check_box.setText('{} ({})'.format(str(bookmaker[1]), str(bookmaker[0])))
             self.checkboxlist.append(check_box)
-            self.formLayout_2.setWidget(data_bookmaker_checklist.index(bookmaker),
+            self.formLayout.setWidget(data_bookmaker_checklist.index(bookmaker),
                                         QtWidgets.QFormLayout.FieldRole, check_box)
-            self.verticalLayout.addLayout(self.formLayout_2)
+            self.verticalLayout.addLayout(self.formLayout)
         for check_box in self.checkboxlist:
             check_box.clicked.connect(lambda state, chck=check_box: self.unselect_allcheckbox(chck))
-        self.pushButton.clicked.connect(self.find_match)
+        self.pushButton_4.clicked.connect(self.update_finded_games)
+
+    def update_finded_games(self):
+        self.finded_games = self.find_match(self.lineEdit.text(),
+                                            self.lineEdit_3.text(),
+                                            self.lineEdit_2.text())
 
     def update_label3(self):
         """
@@ -121,15 +124,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         query = 'SELECT COUNT(*) FROM game'
         cur.execute(query)
         all_game_count = cur.fetchone()
-        self.label_11.setText('Всего игр в базе: ' + str(all_game_count[0]))
+        self.label_3.setText('Всего игр в базе: ' + str(all_game_count[0]))
         cur.close()
         con.close()
 
-    @eror_handler
-    def find_match(self):
+    def find_match(self, p1, x, p2):
         """
         поиск совпадений
         :return:
+        список игр
         """
         select_bk = None
         for check_box in self.checkboxlist:
@@ -144,9 +147,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             print('[WARNING] Не выбрана букмекерская контора')
             return
         # Добавить разные инфо если не введени какие нибудь из значений
-        p1 = self.lineEdit.text()
-        x = self.lineEdit_2.text()
-        p2 = self.lineEdit_3.text()
         if not p1 or not x or not p2:
             print('[WARNING] Введенны не все коэф-ты')
             return
@@ -155,15 +155,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur = con.cursor()
         query = 'SELECT game_id FROM bet WHERE bookmaker_id = ? AND p1 = ? AND x = ? AND p2 = ?'
         cur.execute(query, [bookmaker_id, p1, x, p2])
-        self.matches_finded = []
+        matches_finded = []
         for match_id in cur.fetchall():
-            if match_id[0] not in self.matches_finded:
-                self.matches_finded.append(match_id[0])
-        self.label.setText('Найдено матчей: ' + str(len(self.matches_finded)))
-        print('[INFO] Найдено матчей: ' + str(len(self.matches_finded)))
-        self.games = []
-        if self.matches_finded:
-            for game_id in self.matches_finded:
+            if match_id[0] not in matches_finded:
+                matches_finded.append(match_id[0])
+        self.label_7.setText('Найдено матчей: ' + str(len(matches_finded)))
+        print('[INFO] Найдено матчей: ' + str(len(matches_finded)))
+        games = []
+        if matches_finded:
+            for game_id in matches_finded:
                 query = 'SELECT * FROM game WHERE id = ?'
                 cur.execute(query, [game_id])
                 data_list = cur.fetchone()
@@ -177,11 +177,11 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                              'sport': data_list[7],
                              'country': data_list[8],
                              'champ': data_list[9]}
-                self.games.append(data_dict)
+                games.append(data_dict)
             p1_out = 0
             p2_out = 0
             x_out = 0
-            for game in self.games:
+            for game in games:
                 result = game['result']
                 p1_r, p2_r = self.get_point_result(result)
                 if float(p1_r) > float(p2_r):
@@ -198,16 +198,23 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 p1_out_percent = 100 * p1_out / all_out
                 p2_out_percent = 100 * p2_out / all_out
                 x_out_percent = 100 * x_out / all_out
-            self.label_6.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
-            self.label_5.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
-            self.label_7.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
+            self.label_9.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
+            self.label_10.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
+            self.label_8.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
         else:
-            self.label_6.setText('П1:')
-            self.label_5.setText('X:')
-            self.label_7.setText('П2:')
-        self.update_table()
+            self.label_9.setText('П1:')
+            self.label_10.setText('X:')
+            self.label_8.setText('П2:')
         cur.close()
         con.close()
+        return games
+
+    @staticmethod
+    def clear_layout(layout):
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
 
     @staticmethod
     def get_point_result(result):
@@ -257,8 +264,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         :return:
         """
         dialog = Dialog()
-        dialog.games = self.games
-        dialog.update_table_games(self.games)
+        dialog.games = self.finded_games
+        dialog.update_table_games(self.finded_games)
         dialog.exec_()
 
     def start_thread_parsing(self, method):
@@ -269,51 +276,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         """
         self.parsing = ParsingThread(self.parser, method)
         self.parsing.start()
-
-    def update_table(self):
-        """
-        Обновление таблицы
-        :return:
-        """
-        self.tableWidget.clearContents()
-        self.tableWidget.setRowCount(len(self.games))
-        for game in self.games:
-            item_command1 = QtWidgets.QTableWidgetItem()
-            item_command1.setText(game['command1'])
-            self.tableWidget.setItem(self.games.index(game), 2, item_command1)
-            item_command2 = QtWidgets.QTableWidgetItem()
-            item_command2.setText(game['command2'])
-            self.tableWidget.setItem(self.games.index(game), 3, item_command2)
-            item_date = QtWidgets.QTableWidgetItem()
-            item_date.setText(game['date'])
-            self.tableWidget.setItem(self.games.index(game), 0, item_date)
-            self.tableWidget.resizeColumnToContents(2)
-            item_country = QtWidgets.QTableWidgetItem()
-            item_country.setText(game['country'])
-            self.tableWidget.setItem(self.games.index(game), 1, item_country)
-            self.tableWidget.resizeColumnToContents(3)
-            item_result = QtWidgets.QTableWidgetItem()
-            item_result.setText(game['result'])
-            self.tableWidget.setItem(self.games.index(game), 4, item_result)
-            self.tableWidget.resizeColumnToContents(4)
-            item_clicked = QtWidgets.QTableWidgetItem()
-            item_clicked.setText('Перейти на сайт')
-            self.tableWidget.setItem(self.games.index(game), 5, item_clicked)
-            self.tableWidget.resizeColumnToContents(5)
-
-    def open_page_in_browser(self, row, column):
-        """
-        Открыть игру в браузере
-        :param row:
-        ряд, а также номер игры в листе self.games
-        :param column:
-        колонка на которую следует нажать
-        :return:
-        """
-        if column == 5:
-            url = self.games[row]['url']
-            print(url)
-            webbrowser.open(url)
 
 
 class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):

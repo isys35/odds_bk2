@@ -169,6 +169,9 @@
                <property name="text">
                 <string>Найдено матчей:</string>
                </property>
+               <property name="alignment">
+                <set>Qt::AlignCenter</set>
+               </property>
               </widget>
              </item>
              <item>
@@ -355,22 +358,7 @@
                    </property>
                    <layout class="QVBoxLayout" name="verticalLayout_20">
                     <item>
-                     <layout class="QFormLayout" name="formLayout_2">
-                      <item row="0" column="0">
-                       <widget class="QPushButton" name="pushButton_7">
-                        <property name="text">
-                         <string>показать матчи</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item row="0" column="1">
-                       <widget class="QLabel" name="label_16">
-                        <property name="text">
-                         <string>Букмекер x (360 совпадений)</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
+                     <layout class="QFormLayout" name="formLayout_2"/>
                     </item>
                    </layout>
                   </widget>

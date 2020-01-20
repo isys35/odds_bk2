@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup as BS
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.firefox.options import Options
 from browsermobproxy import Server
 import time
@@ -331,7 +332,13 @@ class Parser:
         while not request_odds_url:
             print('[INFO] Получение API запроса для %s' % url)
             self.proxy.new_har("oddsportal")
-            self.browser.get(url)
+            try:
+                self.browser.get(url)
+            except WebDriverException:
+                print('[WARNING] Connection eror')
+                print('[WARNING] Ожидаем 5 мин')
+                time.sleep(300)
+                continue
             out = self.proxy.har
             for el in out['log']['entries']:
                 if 'https://fb.oddsportal.com/feed/match/' in el['request']['url']:
@@ -489,7 +496,14 @@ class Parser:
         cur.execute('INSERT INTO game (command1,command2,url,date,timematch,'
                     'result,sport,country,liga) '
                     'VALUES(?,?,?,?,?,?,?,?,?)', input_data)
-        con.commit()
+        commited = False
+        while not commited:
+            try:
+                con.commit()
+                commited = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
         print('[INFO] игра %s добавлена в базу' % str(input_data[0:2]))
         self.counter_game += 1
         print('[INFO] Добавлено игр ' + str(self.counter_game))

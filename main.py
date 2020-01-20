@@ -10,6 +10,7 @@ import dialog
 from parser_odds import Parser
 import webbrowser
 import json
+import time
 
 
 def eror_handler(func):
@@ -34,7 +35,18 @@ def eror_handler_args(func):
     return wrapper
 
 
+def brenchmark(func):
+    def wrapper(*args):
+        start = time.time()
+        func(*args)
+        end = time.time()
+        print('[INFO] Время ' + str(end - start))
+
+    return wrapper
+
+
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -59,6 +71,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         with open("logotypepath.json", "r") as read_file:
             return json.load(read_file)
 
+    @brenchmark
     def update_bookmakers(self):
         """
         Обновление окна букмекеров
@@ -73,10 +86,10 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         data_bookmaker_checklist = []
         print('[INFO] Получаем кол-во матчей для каждого букмекера')
         for bookmaker in self.data_bookmaker:
-            query = 'SELECT * FROM bet WHERE bookmaker_id = ?'
+            query = 'SELECT COUNT(*) FROM bet WHERE bookmaker_id = ?'
             cur.execute(query, [bookmaker[0]])
-            count_bookmaker_match = len(cur.fetchall())
-            data_bookmaker_checklist.append([count_bookmaker_match, bookmaker[1]])
+            count_bookmaker_match = cur.fetchone()
+            data_bookmaker_checklist.append([count_bookmaker_match[0], bookmaker[1]])
         cur.close()
         con.close()
         data_bookmaker_checklist.sort(reverse=True)
@@ -105,10 +118,10 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         """
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        query = 'SELECT id FROM game'
+        query = 'SELECT COUNT(*) FROM game'
         cur.execute(query)
-        all_game_count = len(cur.fetchall())
-        self.label_11.setText('Всего игр в базе: ' + str(all_game_count))
+        all_game_count = cur.fetchone()
+        self.label_11.setText('Всего игр в базе: ' + str(all_game_count[0]))
         cur.close()
         con.close()
 
@@ -413,15 +426,18 @@ class ParsingThread(QThread):
         self.update_db()
 
 
-def main():
+def main(*args):
     try:
         app = QtWidgets.QApplication(sys.argv)
         window = MainApp()
         window.show()
+        if args:
+            window.start_thread_parsing('continue')
         app.exec_()
     except Exception as ex:
         print(ex)
         print(traceback.format_exc())
+        main('continue')
 
 
 if __name__ == '__main__':

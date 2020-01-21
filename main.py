@@ -4,6 +4,7 @@ import traceback
 import sys
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtCore import QThread
+from browsermobproxy import Server
 import sqlite3
 import mainwindow
 import dialog
@@ -20,7 +21,6 @@ def eror_handler(func):
         except Exception as ex:
             print(ex)
             print(traceback.format_exc())
-
     return wrapper
 
 
@@ -56,10 +56,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.update_bookmakers()
         self.update_label3()
         self.finded_games = []
+        self.counter_bets = 0
+        self.counter_games = 0
         self.pushButton_5.clicked.connect(self.open_dialog)
         self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
         self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
         self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
+        self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
+                             options={'existing_proxy_port_to_use': 8090})
+        self.server.start()
 
     @staticmethod
     def get_logotype_path():
@@ -270,8 +275,9 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         :param method:
         :return:
         """
-        self.parsing = ParsingThread(self.label_2, self.label, self.label_3, method)
+        self.parsing = ParsingThread(self, method)
         self.parsing.start()
+
 
 
 class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
@@ -364,12 +370,17 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
 
 
 class ParsingThread(QThread):
-    def __init__(self, label1, label2, label3, method):
+
+    def __init__(self, window, method):
         super().__init__()
-        self.label1=label1
-        self.label2=label2
-        self.label3=label3
-        self.parser = Parser(label_info=self.label1, label_info2=self.label2, label_info3=self.label3)
+        self.window = window
+        self.label1 = self.window.label_2
+        self.label2 = self.window.label
+        self.label3 = self.window.label_3
+        self.parser = Parser(label_info=self.label1,
+                             label_info2=self.label2,
+                             label_info3=self.label3,
+                             server=self.window.server)
         self.method = method
 
     def update_db(self):
@@ -396,16 +407,9 @@ class ParsingThread(QThread):
             erorfile += str(traceback.format_exc()) + '\n'
             with open("erorfile.txt", "a") as append_file:
                 append_file.write(erorfile)
-            self.method = 'continue'
-            count_koef = self.parser.counter_bet
-            count_game = self.parser.counter_game
-            if self.parser.browser:
-                self.parser.browser.quit()
-                self.parser.server.stop()
-            self.parser = Parser(label_info=self.label1, label_info2=self.label2, label_info3=self.label3)
-            self.parser.counter_bet = count_koef
-            self.parser.counter_game = count_game
-            self.run()
+            self.parser.browser.quit()
+            self.parser.browser.stop_client()
+            self.window.start_thread_parsing('continue')
 
 
 def main():

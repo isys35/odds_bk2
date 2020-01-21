@@ -1,19 +1,15 @@
 import requests
 from bs4 import BeautifulSoup as BS
 from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.firefox.options import Options
 from browsermobproxy import Server
 import time
 import sqlite3
 import json
-import psutil
-import os
-import sys
 
 
 class Parser:
-    def __init__(self, label_info=None, label_info2=None, label_info3=None):
+    def __init__(self, label_info=None, label_info2=None, label_info3=None, server=None):
         self.label_info = label_info
         self.label_info2 = label_info2
         self.label_info3 = label_info3
@@ -25,7 +21,7 @@ class Parser:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
         self.bookmakersData = self.get_bookmakersdata()
-        self.server = None
+        self.server = server
         self.browser = None
         self.proxy = None
         self.out_match_data = {}
@@ -43,9 +39,10 @@ class Parser:
         print('[INFO] Запуск браузера')
         options = Options()
         options.headless = False  # False - не отображает браузер; True - отображает
-        self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
+        if not self.server:
+            self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
                              options={'existing_proxy_port_to_use': 8090})
-        self.server.start()
+            self.server.start()
         try:
             self.proxy = self.server.create_proxy()
         except Exception as ex:
@@ -55,6 +52,7 @@ class Parser:
         profile = webdriver.FirefoxProfile()
         profile.set_proxy(self.proxy.selenium_proxy())
         self.browser = webdriver.Firefox(firefox_profile=profile, options=options)
+
 
     def start(self, sport, continue_parsing=False, last_year=False):
         """

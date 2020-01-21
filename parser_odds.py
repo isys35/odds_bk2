@@ -230,6 +230,12 @@ class Parser:
         if trs[0].select('.cms'):
             print('[INFO] No data available')
             return True
+        try:
+            for tr in trs:
+                check = tr['class']
+        except KeyError:
+            print('[WARNING] Not odds')
+            return True
         for tr in trs:
             if 'deactivate' in tr['class']:
                 if len(tr.select('span.live-odds-ico-prev')) == 0:
@@ -333,6 +339,8 @@ class Parser:
             print('[INFO] Получение API запроса для %s' % url)
             self.proxy.new_har("oddsportal")
             try:
+                if not self.browser:
+                    self.browser_start()
                 self.browser.get(url)
             except WebDriverException:
                 print('[WARNING] Connection eror')

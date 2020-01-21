@@ -31,7 +31,6 @@ def eror_handler_args(func):
         except Exception as ex:
             print(ex)
             print(traceback.format_exc())
-
     return wrapper
 
 
@@ -41,7 +40,6 @@ def brenchmark(func):
         func(*args)
         end = time.time()
         print('[INFO] Время ' + str(end - start))
-
     return wrapper
 
 
@@ -257,16 +255,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             if check != check_box:
                 check.setChecked(False)
 
-    @eror_handler
     def open_dialog(self):
         """
         Открыть диалоговое окно
         :return:
         """
-        dialog = Dialog()
-        dialog.games = self.finded_games
-        dialog.update_table_games(self.finded_games)
-        dialog.exec_()
+        dial = Dialog()
+        dial.games = self.finded_games
+        dial.update_table_games(self.finded_games)
+        dial.exec_()
 
     def start_thread_parsing(self, method):
         """
@@ -385,21 +382,29 @@ class ParsingThread(QThread):
             print('[WARNING] Метод {} не найден '.format(self.method))
 
     def run(self):
-        self.update_db()
+        try:
+            self.update_db()
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
+            print('[INFO] Перезапуск парсера....')
+            time.sleep(5)
+            erorfile = str('[TIME]') + str(time.asctime()) + '\n'
+            erorfile += str(ex) + '\n'
+            erorfile += str(traceback.format_exc()) + '\n'
+            with open("erorfile.txt", "a") as append_file:
+                append_file.write(erorfile)
+            self.method = 'continue'
+            if self.parser.browser:
+                self.parser.browser.quit()
+            self.run()
 
 
-def main(*args):
-    try:
-        app = QtWidgets.QApplication(sys.argv)
-        window = MainApp()
-        window.show()
-        if args:
-            window.start_thread_parsing('continue')
-        app.exec_()
-    except Exception as ex:
-        print(ex)
-        print(traceback.format_exc())
-        main('continue')
+def main():
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainApp()
+    window.show()
+    app.exec_()
 
 
 if __name__ == '__main__':

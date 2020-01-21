@@ -60,7 +60,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
         self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
         self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
-        self.parser = Parser(label_info=self.label_2, label_info2=self.label, label_info3=self.label_3)
 
     @staticmethod
     def get_logotype_path():
@@ -271,7 +270,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         :param method:
         :return:
         """
-        self.parsing = ParsingThread(self.parser, method)
+        self.parsing = ParsingThread(self.label_2, self.label, self.label_3, method)
         self.parsing.start()
 
 
@@ -365,9 +364,12 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
 
 
 class ParsingThread(QThread):
-    def __init__(self, parser, method):
+    def __init__(self, label1, label2, label3, method):
         super().__init__()
-        self.parser = parser
+        self.label1=label1
+        self.label2=label2
+        self.label3=label3
+        self.parser = Parser(label_info=self.label1, label_info2=self.label2, label_info3=self.label3)
         self.method = method
 
     def update_db(self):
@@ -395,8 +397,14 @@ class ParsingThread(QThread):
             with open("erorfile.txt", "a") as append_file:
                 append_file.write(erorfile)
             self.method = 'continue'
+            count_koef = self.parser.counter_bet
+            count_game = self.parser.counter_game
             if self.parser.browser:
                 self.parser.browser.quit()
+                self.parser.server.stop()
+            self.parser = Parser(label_info=self.label1, label_info2=self.label2, label_info3=self.label3)
+            self.parser.counter_bet = count_koef
+            self.parser.counter_game = count_game
             self.run()
 
 

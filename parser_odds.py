@@ -7,6 +7,9 @@ from browsermobproxy import Server
 import time
 import sqlite3
 import json
+import psutil
+import os
+import sys
 
 
 class Parser:
@@ -338,15 +341,7 @@ class Parser:
         while not request_odds_url:
             print('[INFO] Получение API запроса для %s' % url)
             self.proxy.new_har("oddsportal")
-            try:
-                if not self.browser:
-                    self.browser_start()
-                self.browser.get(url)
-            except WebDriverException:
-                print('[WARNING] Connection eror')
-                print('[WARNING] Ожидаем 5 мин')
-                time.sleep(300)
-                continue
+            self.browser.get(url)
             out = self.proxy.har
             for el in out['log']['entries']:
                 if 'https://fb.oddsportal.com/feed/match/' in el['request']['url']:

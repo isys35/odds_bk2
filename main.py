@@ -135,25 +135,23 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         :return:
         список игр
         """
+        con = sqlite3.connect(self.db)
+        cur = con.cursor()
         select_bk = None
         for check_box in self.checkboxlist:
             if check_box.isChecked():
                 select_bk = check_box.text().rsplit(' ', maxsplit=1)[0]
-        bookmaker_id = None
-        for bk in self.data_bookmaker:
-            if bk[1] == select_bk:
-                bookmaker_id = bk[0]
-                break
         if not select_bk:
             print('[WARNING] Не выбрана букмекерская контора')
             return
+        query = 'SELECT id FROM bookmaker WHERE name = ?'
+        cur.execute(query, [select_bk])
+        bookmaker_id = cur.fetchone()[0]
         # Добавить разные инфо если не введени какие нибудь из значений
         if not p1 or not x or not p2:
             print('[WARNING] Введенны не все коэф-ты')
             return
         print('[INFO] Поиск в базе игры с букмекером {} П1 = {} X = {} П2 = {}'.format(select_bk, p1, x, p2))
-        con = sqlite3.connect(self.db)
-        cur = con.cursor()
         query = 'SELECT game_id FROM bet WHERE bookmaker_id = ? AND p1 = ? AND x = ? AND p2 = ?'
         cur.execute(query, [bookmaker_id, p1, x, p2])
         matches_finded = []

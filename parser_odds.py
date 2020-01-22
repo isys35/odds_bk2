@@ -300,11 +300,17 @@ class Parser:
             return []
         if args:
             active_page = 0
+            count_check_page = 0
             while active_page != args[0]:
                 print('[INFO] проверка правильности страницы')
                 content_browser = self.browser.page_source
                 soup_champ = BS(content_browser, 'html.parser')
                 active_page = int(soup_champ.select('#pagination')[0].select('span.active-page')[0].text)
+                count_check_page += 1
+                if count_check_page == 50:
+                    count_check_page = 0
+                    self.browser.get(self.main_page)
+                    self.browser.get(url)
             print('[INFO] Страница верная')
         for tr in trs:
             if 'deactivate' in tr['class']:

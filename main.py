@@ -12,6 +12,7 @@ from parser_odds import Parser
 import webbrowser
 import json
 import time
+from collections import Counter
 
 
 def eror_handler(func):
@@ -80,29 +81,27 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         print('[INFO] Берём из базы букмекерские конторы')
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        query = 'SELECT * FROM bookmaker'
+        query = \
+            '''SELECT book.name AS book_name
+                FROM bet b
+                INNER JOIN bookmaker book ON b.bookmaker_id = book.id
+            '''
         cur.execute(query)
-        self.data_bookmaker = [[bookmaker[0], bookmaker[1]] for bookmaker in cur.fetchall()]
-        data_bookmaker_checklist = []
-        print('[INFO] Получаем кол-во матчей для каждого букмекера')
-        for bookmaker in self.data_bookmaker:
-            query = 'SELECT COUNT(*) FROM bet WHERE bookmaker_id = ?'
-            cur.execute(query, [bookmaker[0]])
-            count_bookmaker_match = cur.fetchone()
-            data_bookmaker_checklist.append([count_bookmaker_match[0], bookmaker[1]])
+        out_execute = [bookmaker[0] for bookmaker in cur.fetchall()]
+        data_bookmaker_checklist = Counter(out_execute).most_common()
+        data_bookmaker_checklist.sort(key=lambda i: i[1], reverse=True)
         cur.close()
         con.close()
-        data_bookmaker_checklist.sort(reverse=True)
         print('[INFO] Строим виджеты CheckBox')
         self.checkboxlist = []
         for bookmaker in data_bookmaker_checklist:
             label = QtWidgets.QLabel(self.scrollAreaWidgetContents)
-            if bookmaker[1] in self.logotypes_path:
-                label.setPixmap(QtGui.QPixmap(self.logotypes_path[bookmaker[1]]))
+            if bookmaker[0] in self.logotypes_path:
+                label.setPixmap(QtGui.QPixmap(self.logotypes_path[bookmaker[0]]))
                 self.formLayout.setWidget(data_bookmaker_checklist.index(bookmaker),
                                             QtWidgets.QFormLayout.LabelRole, label)
             check_box = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
-            check_box.setText('{} ({})'.format(str(bookmaker[1]), str(bookmaker[0])))
+            check_box.setText('{} ({})'.format(str(bookmaker[0]), str(bookmaker[1])))
             self.checkboxlist.append(check_box)
             self.formLayout.setWidget(data_bookmaker_checklist.index(bookmaker),
                                         QtWidgets.QFormLayout.FieldRole, check_box)

@@ -374,9 +374,10 @@ class Parser:
         print('[INFO] ' + result)
         return result
 
-    def get_date(self, url):
+    def get_date(self, url, full=False):
         """
         Получение даты матча
+        :param status:
         :param url:
         адрес страницы с игрой
         :return:
@@ -389,7 +390,10 @@ class Parser:
         soup_liga = BS(content_match, 'html.parser')
         col_content = soup_liga.select('#col-content')
         try:
-            date = col_content[0].select('p.date')[0].text.split(', ')[1]
+            if full:
+                date = col_content[0].select('p.date')[0].text
+            else:
+                date = col_content[0].select('p.date')[0].text.split(', ')[1]
         except IndexError:
             date = 'None'
         print('[INFO] ' + date)
@@ -434,20 +438,50 @@ class Parser:
             return [result, out_odds, date]
         return [result, {}, date]
 
-    def clear_response_odds(self, odds_response):
+    def get_match_fulldata(self, url):
+        print(url)
+        start = time.time()
+        request_odds_url = self.get_odds_response(url)
+        result = self.get_result(url)
+        date = self.get_date(url, full=True)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0',
+            'referer': url
+        }
+        # время запроса для подключения к API
+        timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
+        # итоговый запрос
+        req_for_time = request_odds_url + timer_reg
+        odds_response = '"E":"notAllowed"'
+        print(req_for_time)
+        while '"E":"notAllowed"' in odds_response:
+            r = requests.get(req_for_time, headers=headers)
+            odds_response = r.text
+            if '"E":"notAllowed"' in odds_response:
+                print('notAllowed')
+                request_odds_url = self.get_odds_response(url)
+                timer_reg = str(time.time()).split('.')[0] + str(time.time()).split('.')[1][0:3]
+                req_for_time = request_odds_url + timer_reg
+        if '"odds":' in odds_response:
+            out_odds = self.clear_response_odds(odds_response, full=True)
+            return out_odds
+
+    def clear_response_odds(self, odds_response, full=False):
         """
         Очистка ответа от API от ненужных данных
+        :param full:
         :param odds_response:
         :return:
         """
         null = None
-        print(null)
-        left_cut1 = odds_response.split('"opening_odds":', 1)
-        right_cut1 = left_cut1[1].split(',"opening_change_time":', 1)
-        left_cut2 = odds_response.split('"odds":', 1)
-        right_cut2 = left_cut2[1].split(',"movement":', 1)
-        dict_openodds = eval(right_cut1[0])
-        dict_odds = eval(right_cut2[0])
+        true = True
+        false = False
+        left_cut1 = odds_response.split('globals.jsonpCallback', 1)
+        right_cut1 = left_cut1[-1].rsplit(';', 1)
+        full_data = [el for el in eval(right_cut1[0])]
+        dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
+        dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
+        dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
         for bk_id, odds in dict_openodds.items():
             if type(odds) is list:
                 for i in range(0, len(odds)):
@@ -462,7 +496,10 @@ class Parser:
             if type(odd) is list:
                 odds = odd
                 if bk_id in self.bookmakersData:
-                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+                    if full:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {'open_odds': odds}
+                    else:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
             else:
                 odds = [None, None, None]
                 if bk_id in self.bookmakersData:
@@ -473,11 +510,39 @@ class Parser:
                             odds[1] = item
                         elif pos == '2':
                             odds[2] = item
-                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+                    if full:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {'open_odds': odds}
+                    else:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+        if full:
+            for bk_id, change_time in dict_opening_change_time.items():
+                if type(change_time) is list:
+                    openning_change_times = change_time
+                    if bk_id in self.bookmakersData:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] = \
+                            openning_change_times
+                else:
+                    openning_change_times = [None, None, None]
+                if bk_id in self.bookmakersData:
+                    for pos, item in change_time.items():
+                        if pos == '0':
+                            openning_change_times[0] = item
+                        elif pos == '1':
+                            openning_change_times[1] = item
+                        elif pos == '2':
+                            openning_change_times[2] = item
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
+                        openning_change_times
+            if 'history' in full_data[1]['d']:
+                keys = [key for key in full_data[1]['d']['history']['back']]
+                print(keys)
         print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
         print('[INFO] Коэ-ты:')
-        print(str(out_dict_odds))
-        return out_dict_odds
+        #print(out_dict_odds)
+        if full:
+            return full_data
+        else:
+            return out_dict_odds
 
     def add_game_in_db(self, *args):
         """
@@ -503,6 +568,7 @@ class Parser:
         cur.execute('INSERT INTO game (command1,command2,url,date,timematch,'
                     'result,sport,country,liga) '
                     'VALUES(?,?,?,?,?,?,?,?,?)', input_data)
+
         commited = False
         while not commited:
             try:

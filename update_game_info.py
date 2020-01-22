@@ -24,18 +24,17 @@ def update_game_info():
     query = 'SELECT game_id FROM  game_info'
     cur.execute(query)
     game_info_ids = [game_id[0] for game_id in cur.fetchall()]
-    print(games)
-    print(game_info_ids)
     cur.close()
     con.close()
     parser = Parser()
-    for game in games:
-        if game[0] in game_info_ids:
-            print('[INFO] Игра уже есть в game_info')
-            continue
-        else:
-            data = parser.get_match_data(game[1])
-            print(data)
+    data = parser.get_match_fulldata('https://www.oddsportal.com/soccer/england/premier-league/crystal-palace-sheffield-utd-KEv6PM1E/')
+    # for game in games:
+    #     if game[0] in game_info_ids:
+    #         print('[INFO] Игра уже есть в game_info')
+    #         continue
+    #     else:
+    #         data = parser.get_match_fulldata(game[1])
+    #         print(data)
 
 
 def greate_game_info_table():

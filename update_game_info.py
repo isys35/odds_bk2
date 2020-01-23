@@ -28,6 +28,7 @@ def update_game_info():
     con.close()
     parser = Parser()
     data = parser.get_match_fulldata('https://www.oddsportal.com/soccer/england/premier-league/crystal-palace-sheffield-utd-KEv6PM1E/')
+    print(data)
     # for game in games:
     #     if game[0] in game_info_ids:
     #         print('[INFO] Игра уже есть в game_info')

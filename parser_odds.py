@@ -400,6 +400,18 @@ class Parser:
         print('[INFO] ' + date)
         return date
 
+    def get_breadcump(self, url):
+        if not self.browser:
+            self.browser_start()
+        if url != self.browser.current_url:
+            self.browser.get(url)
+        content_match = self.browser.page_source
+        soup_liga = BS(content_match, 'html.parser')
+        breadcump = soup_liga.select('#breadcrumb')
+        breadcump_out = breadcump[0].text.replace('\nYou are here\n', '').replace('\n', ' ').replace('\t', '')
+        return breadcump_out
+
+
     def get_match_data(self, url: str):
         """
         Получения данных с игры
@@ -445,6 +457,7 @@ class Parser:
         request_odds_url = self.get_odds_response(url)
         result = self.get_result(url)
         date = self.get_date(url, full=True)
+        breadcump = self.get_breadcump(url)
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0',
             'referer': url
@@ -465,7 +478,7 @@ class Parser:
                 req_for_time = request_odds_url + timer_reg
         if '"odds":' in odds_response:
             out_odds = self.clear_response_odds(odds_response, full=True)
-            return out_odds
+            return [result, out_odds, date, breadcump]
 
     def clear_response_odds(self, odds_response, full=False):
         """
@@ -550,10 +563,7 @@ class Parser:
                     check_dict[key] = []
                     for bk_name, time_history in items.items():
                         check_odds = out_dict_odds[bk_name]
-                        print(check_odds)
                         for t in time_history:
-                            print(t[2], check_odds['openning_change_times'])
-                            print(t[0], check_odds['open_odds'])
                             for i in ranges:
                                 if t[2] == check_odds['openning_change_times'][i]:
                                     if float(t[0]) == check_odds['open_odds'][i]:
@@ -565,17 +575,14 @@ class Parser:
                     check_dict[el] = str(key_max)
                 for key, items in history.items():
                     for bk_name, time_history in items.items():
-                        out_dict_odds[bk_name][key] = time_history
-                print(out_dict_odds)
+                        out_dict_odds[bk_name][check_dict[key]] = time_history
             else:
                 print('[INFO] История изменений коэф-тов отсутствует')
-        print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
-        print('[INFO] Коэ-ты:')
-        #print(out_dict_odds)
-        if full:
-            return full_data
-        else:
-            return out_dict_odds
+        if not full:
+            print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
+            print('[INFO] Коэ-ты:')
+            print(out_dict_odds)
+        return out_dict_odds
 
     def add_game_in_db(self, *args):
         """

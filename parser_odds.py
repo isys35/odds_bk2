@@ -536,17 +536,17 @@ class Parser:
                             openning_change_times
                 else:
                     openning_change_times = [None, None, None]
-                if bk_id in self.bookmakersData:
-                    for pos, item in change_time.items():
-                        if pos == '0':
-                            openning_change_times[0] = item
-                        elif pos == '1':
-                            openning_change_times[1] = item
-                        elif pos == '2':
-                            openning_change_times[2] = item
-                    out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
-                        openning_change_times
-            if 'history' in full_data[1]['d']:
+                    if bk_id in self.bookmakersData:
+                        for pos, item in change_time.items():
+                            if pos == '0':
+                                openning_change_times[0] = item
+                            elif pos == '1':
+                                openning_change_times[1] = item
+                            elif pos == '2':
+                                openning_change_times[2] = item
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
+                            openning_change_times
+            if full_data[1]['d']['history']['back']:
                 print('[INFO] История изменений коэф-тов присутствует')
                 history = {}
                 keys = [key for key in full_data[1]['d']['history']['back']]

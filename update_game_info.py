@@ -1,7 +1,7 @@
 import time
 import sqlite3
 from parser_odds import Parser
-
+import xlwt
 db = 'oddsportal.db'
 
 
@@ -28,7 +28,7 @@ def update_game_info():
     con.close()
     parser = Parser()
     data = parser.get_match_fulldata('https://www.oddsportal.com/soccer/england/premier-league/crystal-palace-sheffield-utd-KEv6PM1E/')
-    print(data)
+    save_data_in_file(data, 'https://www.oddsportal.com/soccer/england/premier-league/crystal-palace-sheffield-utd-KEv6PM1E/')
     # for game in games:
     #     if game[0] in game_info_ids:
     #         print('[INFO] Игра уже есть в game_info')
@@ -37,6 +37,108 @@ def update_game_info():
     #         data = parser.get_match_fulldata(game[1])
     #         print(data)
 
+
+def save_data_in_file(data, url):
+    game_info_folder = 'game_info/'
+    file_name =game_info_folder + url.replace('/','').split('-')[-1] +'.xls'
+    #odds_info = get_odds_string(data[1])
+    wb = xlwt.Workbook()
+    ws = wb.add_sheet('sheet')
+    ws.col(2).width = 6000
+    ws.col(4).width = 6000
+    ws.col(6).width = 6000
+    ws.write(0, 0, str(data[3]))
+    ws.write(1, 0, str(data[2]))
+    ws.write(2, 0, str(data[0]))
+    ws.write(4, 0, 'Букмекер')
+    ws.write(4, 1, 'П1')
+    ws.write(4, 2, 'Время')
+    ws.write(4, 3, 'X')
+    ws.write(4, 4, 'Время')
+    ws.write(4, 5, 'П2')
+    ws.write(4, 6, 'Время')
+    ws.write(4, 7, 'Маржа')
+    target_row = 5
+    for bookmaker in data[1]:
+        ws.write(target_row, 0, bookmaker)
+        ws.write(target_row, 1, data[1][bookmaker]['open_odds'][0])
+        ws.write(target_row, 2, time.ctime(data[1][bookmaker]['openning_change_times'][0]))
+        ws.write(target_row, 3, data[1][bookmaker]['open_odds'][1])
+        ws.write(target_row, 4, time.ctime(data[1][bookmaker]['openning_change_times'][1]))
+        ws.write(target_row, 5, data[1][bookmaker]['open_odds'][2])
+        ws.write(target_row, 6, time.ctime(data[1][bookmaker]['openning_change_times'][2]))
+        major = ((1 / data[1][bookmaker]['open_odds'][0] * 100)
+                 + (1 / data[1][bookmaker]['open_odds'][1] * 100)
+                 + (1 / data[1][bookmaker]['open_odds'][2] * 100)) - 100
+        ws.write(target_row, 7, major)
+        target_row += 1
+        check_max = []
+        for key, item in data[1][bookmaker].items():
+            if key in ['0', '1', '2']:
+                check_max.append(len(item))
+        max_len_history = max(check_max)
+        if '0' in data[1][bookmaker]:
+            for key, item in data[1][bookmaker].items():
+                if key in ['0', '1', '2']:
+                    item.sort(key=lambda i: i[2])
+                    if len(item) != max_len_history:
+                        while len(item) != max_len_history:
+                            item.append(item[-1])
+        for i in range(1, max_len_history):
+            ws.write(target_row, 1, float(data[1][bookmaker]['0'][i][0]))
+            ws.write(target_row, 3, float(data[1][bookmaker]['1'][i][0]))
+            ws.write(target_row, 5, float(data[1][bookmaker]['2'][i][0]))
+            ws.write(target_row, 2, time.ctime(data[1][bookmaker]['0'][i][2]))
+            ws.write(target_row, 4, time.ctime(data[1][bookmaker]['1'][i][2]))
+            ws.write(target_row, 6, time.ctime(data[1][bookmaker]['2'][i][2]))
+            major = ((1/float(data[1][bookmaker]['0'][i][0])*100)
+                     + (1/float(data[1][bookmaker]['1'][i][0])*100)
+                     + (1/float(data[1][bookmaker]['2'][i][0])*100)) - 100
+            ws.write(target_row, 7, major)
+            target_row += 1
+
+    wb.save(file_name)
+    # with open(file_name, "w") as out_file:
+    #     out_file.write(str(data[3]))
+    #     out_file.write('\n')
+    #     out_file.write(str(data[2]))
+    #     out_file.write('\n')
+    #     out_file.write(str(data[0]))
+    #     out_file.write('\n')
+    #     out_file.write('\n')
+    #     out_file.write('Букмекер')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('П1')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('Время')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('X')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('Время')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('П2')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('Время')
+    #     out_file.write('\t\t\t\t')
+    #     out_file.write('Маржа')
+    #     out_file.write('\n')
+    #     out_file.write(odds_info)
+
+
+# def get_odds_string(data):
+#     print(data)
+#     out_string = ''
+#     for bookmaker in data:
+#         out_string += bookmaker + '\t\t\t\t'
+#         out_string += str(data[bookmaker]['open_odds'][0]) + '\t\t\t\t'
+#         out_string += str(time.ctime(data[bookmaker]['openning_change_times'][0])) + '\t\t\t\t'
+#         out_string += str(data[bookmaker]['open_odds'][1]) + '\t\t\t\t'
+#         out_string += str(time.ctime(data[bookmaker]['openning_change_times'][1])) + '\t\t\t\t'
+#         out_string += str(data[bookmaker]['open_odds'][2]) + '\t\t\t\t'
+#         out_string += str(time.ctime(data[bookmaker]['openning_change_times'][2])) + '\t\t\t\t'
+#         out_string += '\n'
+#     print(out_string)
+#     return out_string
 
 def greate_game_info_table():
     print('[INFO] Создание таблицы game_info')
@@ -50,5 +152,6 @@ def greate_game_info_table():
     cur.execute(query)
     cur.close()
     con.close()
+
 
 update_game_info()

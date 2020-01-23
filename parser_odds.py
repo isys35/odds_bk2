@@ -411,7 +411,6 @@ class Parser:
         breadcump_out = breadcump[0].text.replace('\nYou are here\n', '').replace('\n', ' ').replace('\t', '')
         return breadcump_out
 
-
     def get_match_data(self, url: str):
         """
         Получения данных с игры

@@ -6,6 +6,7 @@ from browsermobproxy import Server
 import time
 import sqlite3
 import json
+from collections import Counter
 
 
 class Parser:
@@ -534,8 +535,40 @@ class Parser:
                     out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
                         openning_change_times
             if 'history' in full_data[1]['d']:
+                print('[INFO] История изменений коэф-тов присутствует')
+                history = {}
                 keys = [key for key in full_data[1]['d']['history']['back']]
-                print(keys)
+                for key, items in full_data[1]['d']['history']['back'].items():
+                    time_hist_bk = {}
+                    for bk_id, time_history in items.items():
+                        if bk_id in self.bookmakersData:
+                            time_hist_bk[self.bookmakersData[bk_id]['WebName']] = time_history
+                            history[key] = time_hist_bk
+                ranges = [0, 1, 2]
+                check_dict = {}
+                for key, items in history.items():
+                    check_dict[key] = []
+                    for bk_name, time_history in items.items():
+                        check_odds = out_dict_odds[bk_name]
+                        print(check_odds)
+                        for t in time_history:
+                            print(t[2], check_odds['openning_change_times'])
+                            print(t[0], check_odds['open_odds'])
+                            for i in ranges:
+                                if t[2] == check_odds['openning_change_times'][i]:
+                                    if float(t[0]) == check_odds['open_odds'][i]:
+                                        check_dict[key].append(i)
+                for el in check_dict:
+                    count = Counter(check_dict[el])
+                    max_val = max(count.values())
+                    key_max = [el for el in count if count[el] == max_val][0]
+                    check_dict[el] = str(key_max)
+                for key, items in history.items():
+                    for bk_name, time_history in items.items():
+                        out_dict_odds[bk_name][key] = time_history
+                print(out_dict_odds)
+            else:
+                print('[INFO] История изменений коэф-тов отсутствует')
         print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
         print('[INFO] Коэ-ты:')
         #print(out_dict_odds)

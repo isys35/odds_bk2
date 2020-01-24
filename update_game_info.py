@@ -35,7 +35,20 @@ def update_game_info():
             continue
         else:
             data = parser.get_match_fulldata(game[1])
-            save_data_in_file(data ,game[1])
+            save_data_in_file(data, game[1])
+            add_game_info_in_db(game[0], game[1])
+
+
+def add_game_info_in_db(game_id,url):
+    game_info_folder = 'game_info/'
+    file_name = game_info_folder + url.replace('/', '').split('-')[-1] + '.xls'
+    con = sqlite3.connect(db)
+    cur = con.cursor()
+    query = 'INSERT INTO game_info (game_id,file_path) VALUES(?,?)'
+    cur.execute(query, [game_id, file_name])
+    con.commit()
+    cur.close()
+    con.close()
 
 
 def save_data_in_file(data, url):
@@ -85,6 +98,9 @@ def save_data_in_file(data, url):
                         while len(item) != max_len_history:
                             item.append(item[-1])
             for i in range(1, max_len_history):
+                p1 = 0
+                p2 = 0
+                x = 0
                 out_keys = []
                 if '0' in data[1][bookmaker]:
                     ws.write(target_row, 1, float(data[1][bookmaker]['0'][i][0]))
@@ -117,10 +133,10 @@ def save_data_in_file(data, url):
                         p2 = float(data[1][bookmaker]['open_odds'][2])
                     elif key == '1':
                         x = float(data[1][bookmaker]['open_odds'][1])
-                major = ((1/p1*100) + (1/x*100) + (1/p2*100)) - 100
-                ws.write(target_row, 7, major)
-                target_row += 1
-
+                if p1 and p2 and x:
+                    major = ((1/p1*100) + (1/x*100) + (1/p2*100)) - 100
+                    ws.write(target_row, 7, major)
+                    target_row += 1
     wb.save(file_name)
     # with open(file_name, "w") as out_file:
     #     out_file.write(str(data[3]))

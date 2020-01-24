@@ -129,7 +129,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur.close()
         con.close()
 
-    @eror_handler_args
     def find_match(self, p1, x, p2):
         """
         поиск совпадений
@@ -173,7 +172,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                         '''
                 cur.execute(query, [game_id])
                 data_list = cur.fetchone()
-                print(data_list)
                 data_dict = {'id': data_list[0],
                              'command1': data_list[1],
                              'command2': data_list[2],
@@ -183,7 +181,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                              'result': data_list[6],
                              'sport': data_list[7],
                              'country': data_list[8],
-                             'champ': data_list[9]}
+                             'champ': data_list[9],
+                             'game_info': data_list[10]}
                 games.append(data_dict)
             p1_out = 0
             p2_out = 0
@@ -345,6 +344,13 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             item_click.setText('Перейти на сайт')
             self.tableWidget.setItem(games.index(game), 9, item_click)
             self.tableWidget.resizeColumnToContents(9)
+            item_info = QtWidgets.QTableWidgetItem()
+            if game['game_info']:
+                item_info.setText('Открыть файл')
+            else:
+                item_info.setText('Файл отсутствует')
+            self.tableWidget.setItem(games.index(game), 10, item_info)
+            self.tableWidget.resizeColumnToContents(10)
 
     def change_filter(self):
         """

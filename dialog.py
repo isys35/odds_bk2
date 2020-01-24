@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'D:\Project\oddsportal_parser\untitled.ui'
+# Form implementation generated from reading ui file 'dialog.ui'
 #
 # Created by: PyQt5 UI code generator 5.13.2
 #
@@ -27,7 +27,7 @@ class Ui_Dialog(object):
         self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         self.tableWidget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(10)
+        self.tableWidget.setColumnCount(11)
         self.tableWidget.setRowCount(0)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(0, item)
@@ -49,6 +49,8 @@ class Ui_Dialog(object):
         self.tableWidget.setHorizontalHeaderItem(8, item)
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(9, item)
+        item = QtWidgets.QTableWidgetItem()
+        self.tableWidget.setHorizontalHeaderItem(10, item)
         self.groupBox = QtWidgets.QGroupBox(Dialog)
         self.groupBox.setGeometry(QtCore.QRect(30, 10, 429, 62))
         self.groupBox.setObjectName("groupBox")
@@ -102,6 +104,8 @@ class Ui_Dialog(object):
         item.setText(_translate("Dialog", "url"))
         item = self.tableWidget.horizontalHeaderItem(9)
         item.setText(_translate("Dialog", "page"))
+        item = self.tableWidget.horizontalHeaderItem(10)
+        item.setText(_translate("Dialog", "файл информации"))
         self.groupBox.setTitle(_translate("Dialog", "Фильтр"))
         self.label.setText(_translate("Dialog", "Год"))
         self.label_2.setText(_translate("Dialog", "Страна"))

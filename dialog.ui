@@ -112,6 +112,11 @@
      <string>page</string>
     </property>
    </column>
+   <column>
+    <property name="text">
+     <string>файл информации</string>
+    </property>
+   </column>
   </widget>
   <widget class="QGroupBox" name="groupBox">
    <property name="geometry">

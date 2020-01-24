@@ -129,6 +129,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur.close()
         con.close()
 
+    @eror_handler_args
     def find_match(self, p1, x, p2):
         """
         поиск совпадений
@@ -163,9 +164,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         games = []
         if matches_finded:
             for game_id in matches_finded:
-                query = 'SELECT * FROM game WHERE id = ?'
+
+                query = '''
+                            SELECT g.id, g.command1, g.command2, g.url, g.date, g.timematch,
+                            g.result, g.sport, g.country, g.liga, info.file_path FROM game g
+                            LEFT JOIN game_info info ON g.id = info.game_id 
+                            WHERE g.id IS ?
+                        '''
                 cur.execute(query, [game_id])
                 data_list = cur.fetchone()
+                print(data_list)
                 data_dict = {'id': data_list[0],
                              'command1': data_list[1],
                              'command2': data_list[2],

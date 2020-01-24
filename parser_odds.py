@@ -492,25 +492,54 @@ class Parser:
         left_cut1 = odds_response.split('globals.jsonpCallback', 1)
         right_cut1 = left_cut1[-1].rsplit(';', 1)
         full_data = [el for el in eval(right_cut1[0])]
+        print(full_data)
         dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
         dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
         dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
+        dict_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['change_time']
+        outcome_id = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['OutcomeID']
+        out_dict_odds = {}
         for bk_id, odds in dict_openodds.items():
             if type(odds) is list:
                 for i in range(0, len(odds)):
                     if not odds[i]:
                         dict_openodds[bk_id][i] = dict_odds[bk_id][i]
+                    if full:
+                        if odds[i]:
+                            if not self.bookmakersData[bk_id]['WebName'] in out_dict_odds:
+                                out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {str(i): []}
+                            else:
+                                out_dict_odds[self.bookmakersData[bk_id]['WebName']][str(i)] = []
+                            print(out_dict_odds)
+                            print(i)
+                            print(out_dict_odds[self.bookmakersData[bk_id]['WebName']][str(i)])
+                            out_dict_odds[self.bookmakersData[bk_id]['WebName']][str(i)].append([dict_odds[bk_id][i],
+                                                                                                 None,
+                                                                                                 dict_change_time[bk_id][i]])
             else:
                 for pos, item in odds.items():
                     if not item:
                         dict_openodds[bk_id][pos] = dict_odds[bk_id][pos]
-        out_dict_odds = {}
+                    if full:
+                        if item:
+                            if not self.bookmakersData[bk_id]['WebName'] in out_dict_odds:
+                                out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {pos: []}
+                            else:
+                                out_dict_odds[self.bookmakersData[bk_id]['WebName']][pos] = []
+                            out_dict_odds[self.bookmakersData[bk_id]['WebName']][pos].append([dict_odds[bk_id][pos],
+                                                                                              None,
+                                                                                              dict_change_time[bk_id][
+                                                                                                  pos]])
+        print(out_dict_odds)
         for bk_id, odd in dict_openodds.items():
             if type(odd) is list:
                 odds = odd
                 if bk_id in self.bookmakersData:
                     if full:
-                        out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {'open_odds': odds}
+                        if not self.bookmakersData[bk_id]['WebName'] in out_dict_odds:
+                            out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {'open_odds': odds}
+                        else:
+                            out_dict_odds[self.bookmakersData[bk_id]['WebName']]['open_odds'] = odds
                     else:
                         out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
             else:
@@ -524,7 +553,10 @@ class Parser:
                         elif pos == '2':
                             odds[2] = item
                     if full:
-                        out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {'open_odds': odds}
+                        if not self.bookmakersData[bk_id]['WebName'] in out_dict_odds:
+                            out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {'open_odds': odds}
+                        else:
+                            out_dict_odds[self.bookmakersData[bk_id]['WebName']]['open_odds'] = odds
                     else:
                         out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
         if full:
@@ -539,11 +571,20 @@ class Parser:
                     if bk_id in self.bookmakersData:
                         for pos, item in change_time.items():
                             if pos == '0':
-                                openning_change_times[0] = item
+                                if item:
+                                    openning_change_times[0] = item
+                                else:
+                                    openning_change_times[0] = dict_change_time[bk_id]['0']
                             elif pos == '1':
-                                openning_change_times[1] = item
+                                if item:
+                                    openning_change_times[1] = item
+                                else:
+                                    openning_change_times[1] = dict_change_time[bk_id]['1']
                             elif pos == '2':
-                                openning_change_times[2] = item
+                                if item:
+                                    openning_change_times[2] = item
+                                else:
+                                    openning_change_times[2] = dict_change_time[bk_id]['2']
                         out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
                             openning_change_times
             if full_data[1]['d']['history']['back']:
@@ -556,25 +597,21 @@ class Parser:
                         if bk_id in self.bookmakersData:
                             time_hist_bk[self.bookmakersData[bk_id]['WebName']] = time_history
                             history[key] = time_hist_bk
-                ranges = [0, 1, 2]
-                check_dict = {}
-                for key, items in history.items():
-                    check_dict[key] = []
-                    for bk_name, time_history in items.items():
-                        check_odds = out_dict_odds[bk_name]
-                        for t in time_history:
-                            for i in ranges:
-                                if t[2] == check_odds['openning_change_times'][i]:
-                                    if float(t[0]) == check_odds['open_odds'][i]:
-                                        check_dict[key].append(i)
-                for el in check_dict:
-                    count = Counter(check_dict[el])
-                    max_val = max(count.values())
-                    key_max = [el for el in count if count[el] == max_val][0]
-                    check_dict[el] = str(key_max)
+                outcome_id_rev = {}
+                if type(outcome_id) is list:
+                    for el in outcome_id:
+                        outcome_id_rev[el] = str(outcome_id.index(el))
+                else:
+                    for key, item in outcome_id.items():
+                        outcome_id_rev[item] = key
                 for key, items in history.items():
                     for bk_name, time_history in items.items():
-                        out_dict_odds[bk_name][check_dict[key]] = time_history
+                        if outcome_id_rev[key] in out_dict_odds[bk_name]:
+                            for t in time_history:
+                                out_dict_odds[bk_name][outcome_id_rev[key]].append(t)
+                        else:
+                            out_dict_odds[bk_name][outcome_id_rev[key]] = time_history
+                print(out_dict_odds)
             else:
                 print('[INFO] История изменений коэф-тов отсутствует')
         if not full:

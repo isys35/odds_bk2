@@ -27,15 +27,15 @@ def update_game_info():
     cur.close()
     con.close()
     parser = Parser()
-    #data = parser.get_match_fulldata('https://www.oddsportal.com/soccer/england/premier-league/crystal-palace-sheffield-utd-KEv6PM1E/')
-    #save_data_in_file(data, 'https://www.oddsportal.com/soccer/england/premier-league/crystal-palace-sheffield-utd-KEv6PM1E/')
+    #data = parser.get_match_fulldata('https://www.oddsportal.com/soccer/africa/africa-cup-of-nations-2008/ivory-coast-egypt-0paU2ipS/')
+    #save_data_in_file(data, 'https://www.oddsportal.com/soccer/africa/africa-cup-of-nations-2008/ivory-coast-egypt-0paU2ipS/')
     for game in games:
         if game[0] in game_info_ids:
             print('[INFO] Игра уже есть в game_info')
             continue
         else:
             data = parser.get_match_fulldata(game[1])
-            save_data_in_file(data,game[1])
+            save_data_in_file(data ,game[1])
 
 
 def save_data_in_file(data, url):
@@ -72,29 +72,52 @@ def save_data_in_file(data, url):
                  + (1 / data[1][bookmaker]['open_odds'][2] * 100)) - 100
         ws.write(target_row, 7, major)
         target_row += 1
-        if '0' in data[1][bookmaker]:
+        if '0' in data[1][bookmaker] or '1' in data[1][bookmaker] or '2' in data[1][bookmaker]:
             check_max = []
             for key, item in data[1][bookmaker].items():
                 if key in ['0', '1', '2']:
                     check_max.append(len(item))
             max_len_history = max(check_max)
-            if '0' in data[1][bookmaker]:
-                for key, item in data[1][bookmaker].items():
-                    if key in ['0', '1', '2']:
-                        item.sort(key=lambda i: i[2])
-                        if len(item) != max_len_history:
-                            while len(item) != max_len_history:
-                                item.append(item[-1])
+            for key, item in data[1][bookmaker].items():
+                if key in ['0', '1', '2']:
+                    item.sort(key=lambda i: i[2])
+                    if len(item) != max_len_history:
+                        while len(item) != max_len_history:
+                            item.append(item[-1])
             for i in range(1, max_len_history):
-                ws.write(target_row, 1, float(data[1][bookmaker]['0'][i][0]))
-                ws.write(target_row, 3, float(data[1][bookmaker]['1'][i][0]))
-                ws.write(target_row, 5, float(data[1][bookmaker]['2'][i][0]))
-                ws.write(target_row, 2, time.ctime(data[1][bookmaker]['0'][i][2]))
-                ws.write(target_row, 4, time.ctime(data[1][bookmaker]['1'][i][2]))
-                ws.write(target_row, 6, time.ctime(data[1][bookmaker]['2'][i][2]))
-                major = ((1/float(data[1][bookmaker]['0'][i][0])*100)
-                         + (1/float(data[1][bookmaker]['1'][i][0])*100)
-                         + (1/float(data[1][bookmaker]['2'][i][0])*100)) - 100
+                out_keys = []
+                if '0' in data[1][bookmaker]:
+                    ws.write(target_row, 1, float(data[1][bookmaker]['0'][i][0]))
+                    ws.write(target_row, 2, time.ctime(data[1][bookmaker]['0'][i][2]))
+                    p1 = float(data[1][bookmaker]['0'][i][0])
+                else:
+                    ws.write(target_row, 1, float(data[1][bookmaker]['open_odds'][0]))
+                    ws.write(target_row, 2, time.ctime(data[1][bookmaker]['openning_change_times'][0]))
+                    out_keys.append('0')
+                if '1' in data[1][bookmaker]:
+                    ws.write(target_row, 3, float(data[1][bookmaker]['1'][i][0]))
+                    ws.write(target_row, 4, time.ctime(data[1][bookmaker]['1'][i][2]))
+                    x = float(data[1][bookmaker]['1'][i][0])
+                else:
+                    ws.write(target_row, 3, float(data[1][bookmaker]['open_odds'][1]))
+                    ws.write(target_row, 4, time.ctime(data[1][bookmaker]['openning_change_times'][1]))
+                    out_keys.append('1')
+                if '2' in data[1][bookmaker]:
+                    ws.write(target_row, 5, float(data[1][bookmaker]['2'][i][0]))
+                    ws.write(target_row, 6, time.ctime(data[1][bookmaker]['2'][i][2]))
+                    p2 = float(data[1][bookmaker]['2'][i][0])
+                else:
+                    ws.write(target_row, 5, float(data[1][bookmaker]['open_odds'][2]))
+                    ws.write(target_row, 6, time.ctime(data[1][bookmaker]['openning_change_times'][2]))
+                    out_keys.append('2')
+                for key in out_keys:
+                    if key == '0':
+                        p1 = float(data[1][bookmaker]['open_odds'][0])
+                    elif key == '2':
+                        p2 = float(data[1][bookmaker]['open_odds'][2])
+                    elif key == '1':
+                        x = float(data[1][bookmaker]['open_odds'][1])
+                major = ((1/p1*100) + (1/x*100) + (1/p2*100)) - 100
                 ws.write(target_row, 7, major)
                 target_row += 1
 

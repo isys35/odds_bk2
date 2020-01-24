@@ -7,6 +7,7 @@ import xlwt
 class GameInfo:
     def __init__(self):
         self.db = 'oddsportal.db'
+        self.parser = Parser()
 
     def update_game_info(self):
         con = sqlite3.connect(self.db)
@@ -29,15 +30,26 @@ class GameInfo:
         game_info_ids = [game_id[0] for game_id in cur.fetchall()]
         cur.close()
         con.close()
-        parser = Parser()
         for game in games:
             if game[0] in game_info_ids:
                 print('[INFO] Игра уже есть в game_info')
                 continue
             else:
-                data = parser.get_match_fulldata(game[1])
+                data = self.parser.get_match_fulldata(game[1])
                 self.save_data_in_file(data, game[1])
                 self.add_game_info_in_db(game[0], game[1])
+
+    def get_game_info(self, url):
+        con = sqlite3.connect(self.db)
+        cur = con.cursor()
+        query = 'SELECT id FROM game WHERE url=?'
+        cur.execute(query, [url])
+        game_id = [game_id[0] for game_id in cur.fetchone()][0]
+        data = self.parser.get_match_fulldata(url)
+        self.save_data_in_file(data, url)
+        self.add_game_info_in_db(game_id, url)
+        cur.close()
+        con.close()
 
     def add_game_info_in_db(self, game_id, url):
         print('[INFO] Добавление файла информации в базу')

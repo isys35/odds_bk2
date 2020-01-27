@@ -45,7 +45,6 @@ def brenchmark(func):
 
 
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
-
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -56,16 +55,23 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.checkboxlist = []
         self.update_bookmakers()
         self.update_label3()
+        self.findedgames_for_url = {}
         self.finded_games = []
         self.counter_bets = 0
         self.counter_games = 0
-        self.pushButton_5.clicked.connect(self.open_dialog)
+        self.pushButton_5.clicked.connect(lambda: self.open_dialog(self.finded_games))
         self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
         self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
         self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
         self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
                              options={'existing_proxy_port_to_use': 8090})
         self.server.start()
+        self.pushButton_6.clicked.connect(self.find_games_href)
+        self.tableWidget.cellClicked.connect(lambda row, column: self.open_dialog_from_table(row, column))
+
+    def open_dialog_from_table(self, row, column):
+        if column == 2:
+            self.open_dialog(self.findedgames_for_url[self.tableWidget.item(row, 0).text()])
 
     @staticmethod
     def get_logotype_path():
@@ -111,9 +117,73 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.pushButton_4.clicked.connect(self.update_finded_games)
 
     def update_finded_games(self):
-        self.finded_games = self.find_match(self.lineEdit.text(),
+        self.finded_games = self.find_match(self.get_select_bk(), self.lineEdit.text(),
                                             self.lineEdit_3.text(),
                                             self.lineEdit_2.text())
+
+    def find_games_href(self):
+        href = self.lineEdit_4.text()
+        parser = Parser(server=self.server)
+        data = parser.get_match_data(href)
+        parser.browser.quit()
+        p1_out = 0
+        p2_out = 0
+        x_out = 0
+        self.findedgames_for_url = {}
+        for key in data[1]:
+            if key != 'Betfair Exchange':
+                game_data = self.find_match(key, data[1][key][0], data[1][key][1], data[1][key][2])
+                self.findedgames_for_url[key] = game_data
+                for game in game_data:
+                    result = game['result']
+                    p1_r, p2_r = self.get_point_result(result)
+                    if float(p1_r) > float(p2_r):
+                        p1_out += 1
+                    elif float(p1_r) < float(p2_r):
+                        p2_out += 1
+                    elif float(p1_r) == float(p2_r):
+                        x_out += 1
+        all_out = p1_out + p2_out + x_out
+        self.label_12.setText('Найдено матчей: {}'.format(all_out))
+        p1_out_percent = 0
+        x_out_percent = 0
+        p2_out_percent = 0
+        if all_out:
+            p1_out_percent = 100 * p1_out / all_out
+            p2_out_percent = 100 * p2_out / all_out
+            x_out_percent = 100 * x_out / all_out
+        self.label_13.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
+        self.label_14.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
+        self.label_15.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
+        self.update_table_games()
+
+    def update_table_games(self):
+        games_sort = [[key, item] for key, item in self.findedgames_for_url.items()]
+        games_sort.sort(key=lambda i: len(i[1]), reverse=True)
+        self.tableWidget.clearContents()
+        self.tableWidget.setRowCount(len(self.findedgames_for_url))
+        for game in games_sort:
+            item_bookmaker = QtWidgets.QTableWidgetItem()
+            item_bookmaker.setText(game[0])
+            self.tableWidget.setItem(games_sort.index(game), 0, item_bookmaker)
+            item_count_match = QtWidgets.QTableWidgetItem()
+            item_count_match.setText(str(len(game[1])))
+            self.tableWidget.setItem(games_sort.index(game), 1, item_count_match)
+            item_open_dialog = QtWidgets.QTableWidgetItem()
+            item_open_dialog.setText('open')
+            self.tableWidget.setItem(games_sort.index(game), 2, item_open_dialog)
+
+
+
+    def get_select_bk(self):
+        select_bk = None
+        for check_box in self.checkboxlist:
+            if check_box.isChecked():
+                select_bk = check_box.text().rsplit(' ', maxsplit=1)[0]
+                return select_bk
+        if not select_bk:
+            print('[WARNING] Не выбрана букмекерская контора')
+            return select_bk
 
     def update_label3(self):
         """
@@ -129,29 +199,24 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur.close()
         con.close()
 
-    def find_match(self, p1, x, p2):
+    def find_match(self, bookmaker, p1, x, p2):
         """
         поиск совпадений
         :return:
         список игр
         """
+        if not bookmaker:
+            return
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        select_bk = None
-        for check_box in self.checkboxlist:
-            if check_box.isChecked():
-                select_bk = check_box.text().rsplit(' ', maxsplit=1)[0]
-        if not select_bk:
-            print('[WARNING] Не выбрана букмекерская контора')
-            return
         query = 'SELECT id FROM bookmaker WHERE name = ?'
-        cur.execute(query, [select_bk])
+        cur.execute(query, [bookmaker])
         bookmaker_id = cur.fetchone()[0]
         # Добавить разные инфо если не введени какие нибудь из значений
         if not p1 or not x or not p2:
             print('[WARNING] Введенны не все коэф-ты')
             return
-        print('[INFO] Поиск в базе игры с букмекером {} П1 = {} X = {} П2 = {}'.format(select_bk, p1, x, p2))
+        print('[INFO] Поиск в базе игры с букмекером {} П1 = {} X = {} П2 = {}'.format(bookmaker, p1, x, p2))
         query = 'SELECT game_id FROM bet WHERE bookmaker_id = ? AND p1 = ? AND x = ? AND p2 = ?'
         cur.execute(query, [bookmaker_id, p1, x, p2])
         matches_finded = []
@@ -263,14 +328,14 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             if check != check_box:
                 check.setChecked(False)
 
-    def open_dialog(self):
+    def open_dialog(self, g):
         """
         Открыть диалоговое окно
         :return:
         """
         dial = Dialog()
-        dial.games = self.finded_games
-        dial.update_table_games(self.finded_games)
+        dial.games = g
+        dial.update_table_games(g)
         dial.exec_()
 
     def start_thread_parsing(self, method):

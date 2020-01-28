@@ -69,4 +69,6 @@ def clear_duplicate():
     con.close()
     print('[INFO] Завершено.')
 
-clear_duplicate()
+
+if __name__ == "__main__":
+    clear_duplicate()

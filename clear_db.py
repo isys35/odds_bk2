@@ -19,25 +19,13 @@ def clear_duplicate():
     duplicates = len(url_duplicate_list)
     print('[INFO] Количество дубликатов: ' + str(duplicates))
     time_list = []
+    ids_list = []
     for url in url_duplicate_list:
+        start = time.time()
         query = 'SELECT id FROM game WHERE url = ?'
         cur.execute(query, [url])
         ids = [index[0] for index in cur.fetchall()]
-        start = time.time()
-        print('[INFO] Удаляем дубликаты...')
-        if len(ids) == 2:
-            query_list = '(%i)' % ids[1]
-        else:
-            query_list = tuple(ids[1:])
-        query = 'DELETE FROM game WHERE id IN {}'.format(query_list)
-        print(query)
-        cur.execute(query)
-        query = 'DELETE FROM bet WHERE game_id IN {}'.format(query_list)
-        print(query)
-        cur.execute(query)
-        query = 'DELETE FROM game_info WHERE game_id IN {}'.format(query_list)
-        print(query)
-        cur.execute(query)
+        ids_list += ids[1:]
         duplicates -= 1
         print('[INFO] Количество дубликатов: ' + str(duplicates))
         end = time.time()
@@ -48,9 +36,37 @@ def clear_duplicate():
         minute = int((time_to_compl % 3600) // 60)
         second = (time_to_compl % 3600) % 60
         print('[INFO] Осталось примерно {} часов {} минут {} секунд'.format(hour, minute, second))
-        con.commit()
+    print('[INFO] Удаляем дубликаты...')
+    if len(ids_list) == 1:
+        query_list = '(%i)' % ids_list[0]
+    else:
+        query_list = tuple(ids_list)
+    query = 'DELETE FROM game WHERE id IN {}'.format(query_list)
+    cur.execute(query)
+    query = 'DELETE FROM bet WHERE game_id IN {}'.format(query_list)
+    cur.execute(query)
+    query = 'DELETE FROM game_info WHERE game_id IN {}'.format(query_list)
+    cur.execute(query)
+    con.commit()
+    print('[INFO] Дубликаты удалены.')
+    print('[INFO] Создаём новую таблицу')
+    query = """CREATE TABLE `game_new` (`id`	INTEGER PRIMARY KEY AUTOINCREMENT,`command1` TEXT, `command2` TEXT, 
+    `url` TEXT UNIQUE, `date`	TEXT, `timematch`	TEXT, `result`	TEXT, `sport`	TEXT, `country`	TEXT, 
+    `liga`	TEXT) """
+    cur.execute(query)
+    print('[INFO] Копируем данные из старой таблицы')
+    query = """INSERT INTO `game_new` SELECT * FROM `game`"""
+    cur.execute(query)
+    print('[INFO] Удаляем старую таблицу')
+    query = """DROP TABLE `game`"""
+    cur.execute(query)
+    print('[INFO] Переименовываем новую таблицу')
+    query = """ALTER TABLE `game_new` RENAME TO game;"""
+    cur.execute(query)
+    con.commit()
+    con.execute("VACUUM")
     cur.close()
     con.close()
-
+    print('[INFO] Завершено.')
 
 clear_duplicate()

@@ -257,15 +257,14 @@ class Parser:
         print('[INFO] Проверка игры ' + url)
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        query = 'SELECT url FROM game'
-        cur.execute(query)
-        data_game = [game[0] for game in cur.fetchall()]
-        for game in data_game:
-            if url == game:
-                print('[INFO] %s игра уже есть в базе ' % str(url))
-                cur.close()
-                con.close()
-                return True
+        query = 'SELECT EXISTS(SELECT * FROM game WHERE url = ? LIMIT 1)'
+        cur.execute(query, [url])
+        game_bool = [game[0] for game in cur.fetchall()][0]
+        if game_bool:
+            print('[INFO] %s игра уже есть в базе ' % str(url))
+            cur.close()
+            con.close()
+            return True
         print('[INFO] %s игры нету в базе ' % str(url))
         cur.close()
         con.close()
@@ -317,6 +316,8 @@ class Parser:
                 if len(tr.select('span.live-odds-ico-prev')) == 0:
                     timematch = tr.select('td.table-time')[0].text
                     match_url = self.main_page + tr.select('a')[0]['href']
+                    if self.check_game_in_db(match_url):
+                        continue
                     game_name = tr.select('a')[0].text
                     command1 = game_name.split(' - ')[0]
                     command2 = game_name.split(' - ')[1]
@@ -644,7 +645,6 @@ class Parser:
         cur.execute('INSERT INTO game (command1,command2,url,date,timematch,'
                     'result,sport,country,liga) '
                     'VALUES(?,?,?,?,?,?,?,?,?)', input_data)
-
         commited = False
         while not commited:
             try:

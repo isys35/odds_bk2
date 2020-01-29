@@ -493,7 +493,6 @@ class Parser:
         left_cut1 = odds_response.split('globals.jsonpCallback', 1)
         right_cut1 = left_cut1[-1].rsplit(';', 1)
         full_data = [el for el in eval(right_cut1[0])]
-        print(full_data)
         dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
         dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
         dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
@@ -511,9 +510,6 @@ class Parser:
                                 out_dict_odds[self.bookmakersData[bk_id]['WebName']] = {str(i): []}
                             else:
                                 out_dict_odds[self.bookmakersData[bk_id]['WebName']][str(i)] = []
-                            print(out_dict_odds)
-                            print(i)
-                            print(out_dict_odds[self.bookmakersData[bk_id]['WebName']][str(i)])
                             out_dict_odds[self.bookmakersData[bk_id]['WebName']][str(i)].append([dict_odds[bk_id][i],
                                                                                                  None,
                                                                                                  dict_change_time[bk_id][i]])
@@ -531,7 +527,7 @@ class Parser:
                                                                                               None,
                                                                                               dict_change_time[bk_id][
                                                                                                   pos]])
-        print(out_dict_odds)
+
         for bk_id, odd in dict_openodds.items():
             if type(odd) is list:
                 odds = odd
@@ -588,36 +584,11 @@ class Parser:
                                     openning_change_times[2] = dict_change_time[bk_id]['2']
                         out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
                             openning_change_times
-            if full_data[1]['d']['history']['back']:
-                print('[INFO] История изменений коэф-тов присутствует')
-                history = {}
-                keys = [key for key in full_data[1]['d']['history']['back']]
-                for key, items in full_data[1]['d']['history']['back'].items():
-                    time_hist_bk = {}
-                    for bk_id, time_history in items.items():
-                        if bk_id in self.bookmakersData:
-                            time_hist_bk[self.bookmakersData[bk_id]['WebName']] = time_history
-                            history[key] = time_hist_bk
-                outcome_id_rev = {}
-                if type(outcome_id) is list:
-                    for el in outcome_id:
-                        outcome_id_rev[el] = str(outcome_id.index(el))
-                else:
-                    for key, item in outcome_id.items():
-                        outcome_id_rev[item] = key
-                for key, items in history.items():
-                    for bk_name, time_history in items.items():
-                        if outcome_id_rev[key] in out_dict_odds[bk_name]:
-                            for t in time_history:
-                                out_dict_odds[bk_name][outcome_id_rev[key]].append(t)
-                        else:
-                            out_dict_odds[bk_name][outcome_id_rev[key]] = time_history
-                print(out_dict_odds)
-            else:
-                print('[INFO] История изменений коэф-тов отсутствует')
         if not full:
             print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
             print('[INFO] Коэ-ты:')
+            print(out_dict_odds)
+        else:
             print(out_dict_odds)
         return out_dict_odds
 

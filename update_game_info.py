@@ -17,9 +17,20 @@ class GameInfo:
         table_info = cur.fetchone()[0]
         cur.close()
         con.close()
+        check_clear_table = 'n'
         if not table_info:
             print('[INFO] Таблицы game_info нету в базе данных')
             self.greate_game_info_table()
+        else:
+            check_clear_table = input('Очистить старую таблицу game_info (y/n) ')
+        if check_clear_table == 'y':
+            con = sqlite3.connect(self.db)
+            cur = con.cursor()
+            query = 'DELETE FROM game_info'
+            cur.execute(query)
+            cur.close()
+            con.close()
+            print('[INFO] Таблица очищена')
         con = sqlite3.connect(self.db)
         cur = con.cursor()
         query = 'SELECT id, url FROM  game'

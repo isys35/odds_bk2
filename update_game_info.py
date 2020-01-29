@@ -28,6 +28,7 @@ class GameInfo:
             cur = con.cursor()
             query = 'DELETE FROM game_info'
             cur.execute(query)
+            con.commit()
             cur.close()
             con.close()
             print('[INFO] Таблица очищена')

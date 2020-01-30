@@ -2,6 +2,7 @@ import time
 import sqlite3
 from parser_odds import Parser
 import xlwt
+import os
 
 
 class GameInfo:
@@ -31,6 +32,10 @@ class GameInfo:
             con.commit()
             cur.close()
             con.close()
+            folder = 'game_info'
+            for the_file in os.listdir(folder):
+                file_path = os.path.join(folder, the_file)
+                os.unlink(file_path)
             print('[INFO] Таблица очищена')
         con = sqlite3.connect(self.db)
         cur = con.cursor()
@@ -80,86 +85,69 @@ class GameInfo:
         file_name =game_info_folder + url.replace('/', '').split('-')[-1] + '.xls'
         wb = xlwt.Workbook()
         ws = wb.add_sheet('sheet')
-        ws.col(2).width = 6000
+        aligment = xlwt.Alignment()
+        aligment.horz = xlwt.Alignment.HORZ_CENTER
+        style_centr_aligment = xlwt.XFStyle()
+        style_centr_aligment.alignment = aligment
+        #ws.col(2).width = 6000
+        ws.col(0).width = 4000
         ws.col(4).width = 6000
-        ws.col(6).width = 6000
+        #ws.col(6).width = 6000
         ws.write(0, 0, str(data[3]))
         ws.write(1, 0, str(data[2]))
         ws.write(2, 0, str(data[0]))
         ws.write(4, 0, 'Букмекер')
-        ws.write(4, 1, 'П1')
-        ws.write(4, 2, 'Время')
-        ws.write(4, 3, 'X')
-        ws.write(4, 4, 'Время')
-        ws.write(4, 5, 'П2')
-        ws.write(4, 6, 'Время')
-        ws.write(4, 7, 'Маржа')
+        ws.write(4, 1, 'П1', style_centr_aligment)
+        ws.write(4, 2, 'X', style_centr_aligment)
+        ws.write(4, 3, 'П2', style_centr_aligment)
+        ws.write(4, 4, 'Время', style_centr_aligment)
+        ws.write(4, 5, 'Маржа', style_centr_aligment)
         target_row = 5
+        list_for_excel = []
         for bookmaker in data[1]:
-            ws.write(target_row, 0, bookmaker)
-            ws.write(target_row, 1, data[1][bookmaker]['open_odds'][0])
-            ws.write(target_row, 2, time.ctime(data[1][bookmaker]['openning_change_times'][0]))
-            ws.write(target_row, 3, data[1][bookmaker]['open_odds'][1])
-            ws.write(target_row, 4, time.ctime(data[1][bookmaker]['openning_change_times'][1]))
-            ws.write(target_row, 5, data[1][bookmaker]['open_odds'][2])
-            ws.write(target_row, 6, time.ctime(data[1][bookmaker]['openning_change_times'][2]))
-            major = ((1 / data[1][bookmaker]['open_odds'][0] * 100)
-                     + (1 / data[1][bookmaker]['open_odds'][1] * 100)
-                     + (1 / data[1][bookmaker]['open_odds'][2] * 100)) - 100
-            ws.write(target_row, 7, major)
+            list_for_excel.append([bookmaker,
+                                   data[1][bookmaker]['open_odds'][0],
+                                   data[1][bookmaker]['open_odds'][1],
+                                   data[1][bookmaker]['open_odds'][2],
+                                   data[1][bookmaker]['openning_change_times'][0]])
+        list_for_excel.sort(key=lambda i: i[4])
+        for el in list_for_excel:
+            ws.write(target_row, 0, el[0])
+            ws.write(target_row, 1, el[1], style_centr_aligment)
+            ws.write(target_row, 4, str(time.ctime(el[4])).split(' ', 1)[1])
+            ws.write(target_row, 2, el[2], style_centr_aligment)
+            ws.write(target_row, 3, el[3], style_centr_aligment)
+            major = ((1 / el[1] * 100)
+                     + (1 / el[2] * 100)
+                     + (1 / el[3] * 100)) - 100
+            ws.write(target_row, 5, round(major, 2), style_centr_aligment)
             target_row += 1
-            if '0' in data[1][bookmaker] or '1' in data[1][bookmaker] or '2' in data[1][bookmaker]:
-                check_max = []
-                for key, item in data[1][bookmaker].items():
-                    if key in ['0', '1', '2']:
-                        check_max.append(len(item))
-                max_len_history = max(check_max)
-                for key, item in data[1][bookmaker].items():
-                    if key in ['0', '1', '2']:
-                        item.sort(key=lambda i: i[2])
-                        if len(item) != max_len_history:
-                            while len(item) != max_len_history:
-                                item.append(item[-1])
-                for i in range(1, max_len_history):
-                    p1 = 0
-                    p2 = 0
-                    x = 0
-                    out_keys = []
-                    if '0' in data[1][bookmaker]:
-                        ws.write(target_row, 1, float(data[1][bookmaker]['0'][i][0]))
-                        ws.write(target_row, 2, time.ctime(data[1][bookmaker]['0'][i][2]))
-                        p1 = float(data[1][bookmaker]['0'][i][0])
-                    else:
-                        ws.write(target_row, 1, float(data[1][bookmaker]['open_odds'][0]))
-                        ws.write(target_row, 2, time.ctime(data[1][bookmaker]['openning_change_times'][0]))
-                        out_keys.append('0')
-                    if '1' in data[1][bookmaker]:
-                        ws.write(target_row, 3, float(data[1][bookmaker]['1'][i][0]))
-                        ws.write(target_row, 4, time.ctime(data[1][bookmaker]['1'][i][2]))
-                        x = float(data[1][bookmaker]['1'][i][0])
-                    else:
-                        ws.write(target_row, 3, float(data[1][bookmaker]['open_odds'][1]))
-                        ws.write(target_row, 4, time.ctime(data[1][bookmaker]['openning_change_times'][1]))
-                        out_keys.append('1')
-                    if '2' in data[1][bookmaker]:
-                        ws.write(target_row, 5, float(data[1][bookmaker]['2'][i][0]))
-                        ws.write(target_row, 6, time.ctime(data[1][bookmaker]['2'][i][2]))
-                        p2 = float(data[1][bookmaker]['2'][i][0])
-                    else:
-                        ws.write(target_row, 5, float(data[1][bookmaker]['open_odds'][2]))
-                        ws.write(target_row, 6, time.ctime(data[1][bookmaker]['openning_change_times'][2]))
-                        out_keys.append('2')
-                    for key in out_keys:
-                        if key == '0':
-                            p1 = float(data[1][bookmaker]['open_odds'][0])
-                        elif key == '2':
-                            p2 = float(data[1][bookmaker]['open_odds'][2])
-                        elif key == '1':
-                            x = float(data[1][bookmaker]['open_odds'][1])
-                    if p1 and p2 and x:
-                        major = ((1/p1*100) + (1/x*100) + (1/p2*100)) - 100
-                        ws.write(target_row, 7, major)
-                        target_row += 1
+            p1_real = el[1] * (1+major/100)
+            x_real = el[2] * (1 + major / 100)
+            p2_real = el[3] * (1 + major / 100)
+            ws.write(target_row, 1, round(p1_real, 2), style_centr_aligment)
+            ws.write(target_row, 2, round(x_real, 2), style_centr_aligment)
+            ws.write(target_row, 3, round(p2_real, 2), style_centr_aligment)
+            target_row += 1
+            p1delta = p1_real-el[1]
+            if p1_real > el[1]:
+                p1delta = '+' + str(round(p1delta, 2))
+            else:
+                p1delta = '-' + str(round(p1delta, 2))
+            xdelta = x_real - el[2]
+            if x_real > el[2]:
+                xdelta = '+' + str(round(xdelta, 2))
+            else:
+                xdelta = '-' + str(round(xdelta, 2))
+            p2delta = p2_real - el[3]
+            if p2_real > el[3]:
+                p2delta = '+' + str(round(p2delta, 2))
+            else:
+                p2delta = '-' + str(round(p2delta, 2))
+            ws.write(target_row, 1, p1delta, style_centr_aligment)
+            ws.write(target_row, 2, xdelta, style_centr_aligment)
+            ws.write(target_row, 3, p2delta, style_centr_aligment)
+            target_row += 1
         wb.save(file_name)
 
     def greate_game_info_table(self):

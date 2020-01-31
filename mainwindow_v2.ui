@@ -384,6 +384,21 @@
                      </column>
                      <column>
                       <property name="text">
+                       <string>П1</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>X</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
+                       <string>П2</string>
+                      </property>
+                     </column>
+                     <column>
+                      <property name="text">
                        <string>Показать матчи</string>
                       </property>
                      </column>

@@ -68,6 +68,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.server.start()
         self.pushButton_6.clicked.connect(self.find_games_href)
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_dialog_from_table(row, column))
+        for i in range(0, 5):
+            self.tableWidget.resizeColumnToContents(i)
 
     def open_dialog_from_table(self, row, column):
         if column == 2:
@@ -172,8 +174,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             item_open_dialog = QtWidgets.QTableWidgetItem()
             item_open_dialog.setText('open')
             self.tableWidget.setItem(games_sort.index(game), 2, item_open_dialog)
-
-
+        for i in range(0, 5):
+            self.tableWidget.resizeColumnToContents(i)
 
     def get_select_bk(self):
         select_bk = None

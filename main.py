@@ -72,8 +72,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             self.tableWidget.resizeColumnToContents(i)
 
     def open_dialog_from_table(self, row, column):
-        if column == 2:
-            self.open_dialog(self.findedgames_for_url[self.tableWidget.item(row, 0).text()])
+        if column == 5:
+            self.open_dialog(self.findedgames_for_url[self.tableWidget.item(row, 0).text()][0])
 
     @staticmethod
     def get_logotype_path():
@@ -135,15 +135,19 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         for key in data[1]:
             if key != 'Betfair Exchange':
                 game_data = self.find_match(key, data[1][key][0], data[1][key][1], data[1][key][2])
-                self.findedgames_for_url[key] = game_data
+                points = [0, 0, 0]
+                self.findedgames_for_url[key] = [game_data, points]
                 for game in game_data:
                     result = game['result']
                     p1_r, p2_r = self.get_point_result(result)
                     if float(p1_r) > float(p2_r):
+                        self.findedgames_for_url[key][1][0] += 1
                         p1_out += 1
                     elif float(p1_r) < float(p2_r):
+                        self.findedgames_for_url[key][1][2] += 1
                         p2_out += 1
                     elif float(p1_r) == float(p2_r):
+                        self.findedgames_for_url[key][1][1] += 1
                         x_out += 1
         all_out = p1_out + p2_out + x_out
         self.label_12.setText('Найдено матчей: {}'.format(all_out))
@@ -161,19 +165,43 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def update_table_games(self):
         games_sort = [[key, item] for key, item in self.findedgames_for_url.items()]
-        games_sort.sort(key=lambda i: len(i[1]), reverse=True)
+        games_sort.sort(key=lambda i: len(i[0][1]), reverse=True)
         self.tableWidget.clearContents()
         self.tableWidget.setRowCount(len(self.findedgames_for_url))
+        print(self.findedgames_for_url)
+        print('')
         for game in games_sort:
             item_bookmaker = QtWidgets.QTableWidgetItem()
             item_bookmaker.setText(game[0])
             self.tableWidget.setItem(games_sort.index(game), 0, item_bookmaker)
             item_count_match = QtWidgets.QTableWidgetItem()
-            item_count_match.setText(str(len(game[1])))
+            item_count_match.setText(str(len(game[1][0])))
             self.tableWidget.setItem(games_sort.index(game), 1, item_count_match)
             item_open_dialog = QtWidgets.QTableWidgetItem()
             item_open_dialog.setText('open')
-            self.tableWidget.setItem(games_sort.index(game), 2, item_open_dialog)
+            self.tableWidget.setItem(games_sort.index(game), 5, item_open_dialog)
+            sum_games = game[1][1][0] + game[1][1][1] + game[1][1][2]
+            if sum_games:
+                item_p1_proc = round(100*game[1][1][0]/sum_games)
+                item_x_proc = round(100 * game[1][1][1] / sum_games)
+                item_p2_proc = round(100 * game[1][1][2] / sum_games)
+            else:
+                item_p1_proc = 0
+                item_x_proc = 0
+                item_p2_proc = 0
+            item_p1_text = '{} % ({})'.format(item_p1_proc, game[1][1][0])
+            item_x_text = '{} % ({})'.format(item_x_proc, game[1][1][1])
+            item_p2_text = '{} % ({})'.format(item_p2_proc, game[1][1][2])
+            print(item_p1_proc, item_x_proc, item_p2_proc)
+            item_p1 = QtWidgets.QTableWidgetItem()
+            item_p1.setText(item_p1_text)
+            self.tableWidget.setItem(games_sort.index(game), 2, item_p1)
+            item_x = QtWidgets.QTableWidgetItem()
+            item_x.setText(item_x_text)
+            self.tableWidget.setItem(games_sort.index(game), 3, item_x)
+            item_p2 = QtWidgets.QTableWidgetItem()
+            item_p2.setText(item_p2_text)
+            self.tableWidget.setItem(games_sort.index(game), 4, item_p2)
         for i in range(0, 5):
             self.tableWidget.resizeColumnToContents(i)
 

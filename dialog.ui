@@ -99,17 +99,17 @@
    </column>
    <column>
     <property name="text">
-     <string>результат</string>
+     <string>Результат</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>url</string>
+     <string>ссылка</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>page</string>
+     <string>страница матча</string>
     </property>
    </column>
    <column>

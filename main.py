@@ -3,7 +3,7 @@
 import traceback
 import sys
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, Qt
 from browsermobproxy import Server
 import sqlite3
 import mainwindow
@@ -134,7 +134,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.findedgames_for_url = {}
         for key in data[1]:
             if key != 'Betfair Exchange':
-                game_data = self.find_match(key, data[1][key][0], data[1][key][1], data[1][key][2])
+                game_data = self.find_match(key, data[1][key][0], data[1][key][1], data[1][key][2], mainlabel=False)
                 points = [0, 0, 0]
                 self.findedgames_for_url[key] = [game_data, points]
                 for game in game_data:
@@ -165,11 +165,12 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
     def update_table_games(self):
         games_sort = [[key, item] for key, item in self.findedgames_for_url.items()]
-        games_sort.sort(key=lambda i: len(i[0][1]), reverse=True)
+        games_sort.sort(key=lambda i: len(i[1][0]), reverse=True)
         self.tableWidget.clearContents()
-        self.tableWidget.setRowCount(len(self.findedgames_for_url))
         print(self.findedgames_for_url)
         print('')
+        games_sort = [game for game in games_sort if len(game[1][0]) > 0]
+        self.tableWidget.setRowCount(len(games_sort))
         for game in games_sort:
             item_bookmaker = QtWidgets.QTableWidgetItem()
             item_bookmaker.setText(game[0])
@@ -192,7 +193,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             item_p1_text = '{} % ({})'.format(item_p1_proc, game[1][1][0])
             item_x_text = '{} % ({})'.format(item_x_proc, game[1][1][1])
             item_p2_text = '{} % ({})'.format(item_p2_proc, game[1][1][2])
-            print(item_p1_proc, item_x_proc, item_p2_proc)
             item_p1 = QtWidgets.QTableWidgetItem()
             item_p1.setText(item_p1_text)
             self.tableWidget.setItem(games_sort.index(game), 2, item_p1)
@@ -229,7 +229,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur.close()
         con.close()
 
-    def find_match(self, bookmaker, p1, x, p2):
+    def find_match(self, bookmaker, p1, x, p2, mainlabel=True):
         """
         поиск совпадений
         :return:
@@ -253,7 +253,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         for match_id in cur.fetchall():
             if match_id[0] not in matches_finded:
                 matches_finded.append(match_id[0])
-        self.label_7.setText('Найдено матчей: ' + str(len(matches_finded)))
+        if mainlabel:
+            self.label_7.setText('Найдено матчей: ' + str(len(matches_finded)))
         print('[INFO] Найдено матчей: ' + str(len(matches_finded)))
         games = []
         if matches_finded:
@@ -299,13 +300,15 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 p1_out_percent = 100 * p1_out / all_out
                 p2_out_percent = 100 * p2_out / all_out
                 x_out_percent = 100 * x_out / all_out
-            self.label_9.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
-            self.label_10.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
-            self.label_8.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
+            if mainlabel:
+                self.label_9.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
+                self.label_10.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
+                self.label_8.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
         else:
-            self.label_9.setText('П1:')
-            self.label_10.setText('X:')
-            self.label_8.setText('П2:')
+            if mainlabel:
+                self.label_9.setText('П1:')
+                self.label_10.setText('X:')
+                self.label_8.setText('П2:')
         cur.close()
         con.close()
         return games
@@ -402,9 +405,11 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             item_index.setText(str(games.index(game)))
             self.tableWidget.setVerticalHeaderItem(games.index(game), item_index)
             item_command1 = QtWidgets.QTableWidgetItem()
+            item_command1.setTextAlignment(Qt.AlignHCenter)
             item_command1.setText(game['command1'])
             self.tableWidget.setItem(games.index(game), 5, item_command1)
             item_command2 = QtWidgets.QTableWidgetItem()
+            item_command2.setTextAlignment(Qt.AlignHCenter)
             item_command2.setText(game['command2'])
             self.tableWidget.setItem(games.index(game), 6, item_command2)
             item_url = QtWidgets.QTableWidgetItem()
@@ -413,15 +418,18 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             item_date = QtWidgets.QTableWidgetItem()
             if game['date']:
                 item_date.setText(game['date'].rsplit(' ', 1)[0])
+                item_date.setTextAlignment(Qt.AlignHCenter)
             self.tableWidget.setItem(games.index(game), 1, item_date)
             self.tableWidget.resizeColumnToContents(1)
             item_year = QtWidgets.QTableWidgetItem()
             if game['date']:
                 item_year.setText(game['date'].rsplit(' ', 1)[1])
+                item_year.setTextAlignment(Qt.AlignHCenter)
             self.tableWidget.setItem(games.index(game), 0, item_year)
             self.tableWidget.resizeColumnToContents(0)
             item_time = QtWidgets.QTableWidgetItem()
             item_time.setText(game['time'])
+            item_time.setTextAlignment(Qt.AlignHCenter)
             self.tableWidget.setItem(games.index(game), 2, item_time)
             self.tableWidget.resizeColumnToContents(2)
             item_result = QtWidgets.QTableWidgetItem()
@@ -430,10 +438,12 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.tableWidget.resizeColumnToContents(7)
             item_country = QtWidgets.QTableWidgetItem()
             item_country.setText(game['country'])
+            item_country.setTextAlignment(Qt.AlignHCenter)
             self.tableWidget.setItem(games.index(game), 3, item_country)
             self.tableWidget.resizeColumnToContents(3)
             item_liga = QtWidgets.QTableWidgetItem()
             item_liga.setText(game['champ'])
+            item_liga.setTextAlignment(Qt.AlignHCenter)
             self.tableWidget.setItem(games.index(game), 4, item_liga)
             item_click = QtWidgets.QTableWidgetItem()
             item_click.setText('Перейти на сайт')

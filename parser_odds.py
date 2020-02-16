@@ -168,9 +168,13 @@ class Parser:
                 html_championship = BS(champ_request_allyears.content, 'html.parser')
                 years_menu = html_championship.select('.main-menu2.main-menu-gray')
         year_page_reversed = []
+        print(years_menu)
         if years_menu:
             years_pages = years_menu[0].select('a')
             first_page = years_pages[0]['href']
+            print(first_page)
+            if not self.browser:
+                self.browser_start()
             self.browser.get(self.main_page + first_page)
             content_first_page = self.browser.page_source
             soup_champ = BS(content_first_page, 'html.parser')
@@ -191,6 +195,8 @@ class Parser:
         if year_page_reversed:
             for page in year_page_reversed:
                 year_page = self.main_page + page['href']
+                if year_page == 'https://www.oddsportal.com//results/':
+                    continue
                 print('[INFO] Страница с годом ' + page.text + ' ' + year_page)
                 if self.check_champ_in_db(year_page):
                     print('[INFO] Год полностью есть в базе')

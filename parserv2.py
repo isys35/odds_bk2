@@ -28,6 +28,7 @@ class MultiParsing(QtWidgets.QDialog, multiparser.Ui_Dialog):
         self.main_page = 'https://www.oddsportal.com'
         self.update_counter_game()
         self.pushButton.clicked.connect(self.update_counter_game)
+        self.comboBox.addItems([str(i) for i in range(1, 11)])
         self.pushButton_2.clicked.connect(self.start_multi_parsing)
 
     def update_counter_game(self):
@@ -35,7 +36,15 @@ class MultiParsing(QtWidgets.QDialog, multiparser.Ui_Dialog):
         con = sqlite3.connect(self.db)
         cur = con.cursor()
         query = 'SELECT COUNT(*) FROM game'
-        cur.execute(query)
+        executing = False
+        while not executing:
+            try:
+                cur.execute(query)
+                executing = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
+                time.sleep(0.1)
         all_game_count = cur.fetchone()
         self.label_41.setText('Количество игр в базе: ' + str(all_game_count[0]))
         cur.close()
@@ -43,20 +52,86 @@ class MultiParsing(QtWidgets.QDialog, multiparser.Ui_Dialog):
         print('[INFO] Подключение к базе успешно')
 
     def start_multi_parsing(self):
-        self.managepars = ManagerPars()
+        self.managepars = ManagerPars(int(self.comboBox.currentText()),self)
         self.managepars.start()
 
 
 class ManagerPars(QThread):
-    def __init__(self):
+    def __init__(self, n_pars, window):
         super().__init__()
+        self.n_pars = n_pars
+        self.window = window
         self.hrefs_pars = []
         #self.parser_statuses = [False for i in range(0, 10)]
         self.soccer_url = 'https://www.oddsportal.com/results/#soccer'
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
-        self.parsers = [ParserThread() for _ in range(0, 5)]
+        self.labels = [
+            {
+                'status': self.window.label_3,
+                'country': self.window.label_2,
+                'champ': self.window.label_4,
+                'count': self.window.label_31
+            },
+            {
+                'status': self.window.label_16,
+                'country': self.window.label_17,
+                'champ': self.window.label_18,
+                'count': self.window.label_36
+            },
+            {
+                'status': self.window.label_6,
+                'country': self.window.label_7,
+                'champ': self.window.label_5,
+                'count': self.window.label_32
+            },
+            {
+                'status': self.window.label_19,
+                'country': self.window.label_21,
+                'champ': self.window.label_20,
+                'count': self.window.label_37
+            },
+            {
+                'status': self.window.label_8,
+                'country': self.window.label_10,
+                'champ': self.window.label_9,
+                'count': self.window.label_33
+            },
+            {
+                'status': self.window.label_22,
+                'country': self.window.label_23,
+                'champ': self.window.label_24,
+                'count': self.window.label_38
+            },
+            {
+                'status': self.window.label_11,
+                'country': self.window.label_12,
+                'champ': self.window.label,
+                'count': self.window.label_34
+            },
+            {
+                'status': self.window.label_25,
+                'country': self.window.label_27,
+                'champ': self.window.label_26,
+                'count': self.window.label_39
+            },
+            {
+                'status': self.window.label_13,
+                'country': self.window.label_15,
+                'champ': self.window.label_14,
+                'count': self.window.label_35
+            },
+            {
+                'status': self.window.label_30,
+                'country': self.window.label_29,
+                'champ': self.window.label_28,
+                'count': self.window.label_40
+            },
+
+
+        ]
+        self.parsers = [ParserThread(self.labels[i]) for i in range(0, self.n_pars)]
 
     def pars(self):
         soccer_url = 'https://www.oddsportal.com/results/#soccer'
@@ -70,10 +145,10 @@ class ManagerPars(QThread):
         for href in href_championships_soccer:
             if href not in self.hrefs_pars:
                 self.hrefs_pars.append(href)
-            while not False in [self.parsers[i].status for i in range(0, 5)]:
+            while not False in [self.parsers[i].status for i in range(0, self.n_pars)]:
                 time.sleep(.2)
                 print('.......')
-            for i in range(0, 5):
+            for i in range(0, self.n_pars):
                 if not self.parsers[i].status:
                     print(href)
                     time.sleep(.2)
@@ -86,12 +161,14 @@ class ManagerPars(QThread):
 
 
 class ParserThread(QThread):
-    def __init__(self):
+    def __init__(self, labels):
         super().__init__()
+        self.labels = labels
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
         self.counter_game = 0
+        self.counter_bet = 0
         self.status = False
         self.main_page = 'https://www.oddsportal.com'
         self.db = 'soccer.db'
@@ -99,6 +176,16 @@ class ParserThread(QThread):
         self.browser_start()
         self.out_match_data = {}
         self.bookmakersData = self.get_bookmakersdata()
+
+    def update_label(self):
+        if self.status:
+            self.labels['status'].setText('Состояние: in progress')
+        if 'country' in self.out_match_data:
+            self.labels['country'].setText('Страна: {}'.format(self.out_match_data['country']))
+        if 'champ' in self.out_match_data:
+            self.labels['champ'].setText('Чемпионат: {}'.format(self.out_match_data['champ']))
+        self.labels['count'].setText('Количество добавленных игр: {}'.format(self.counter_game))
+
 
     @staticmethod
     def get_bookmakersdata():
@@ -142,6 +229,7 @@ class ParserThread(QThread):
             self.out_match_data['country'] = country
             string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
             self.out_match_data['champ'] = string_champ
+            self.update_label()
             print('[INFO] Страна ' + country)
             print('[INFO] Чемпионат ' + string_champ)
             if self.check_champ_in_db(self.main_page + first_page):
@@ -222,7 +310,15 @@ class ParserThread(QThread):
         con = sqlite3.connect(self.db)
         cur = con.cursor()
         query = 'SELECT EXISTS(SELECT * FROM game WHERE url = ? LIMIT 1)'
-        cur.execute(query, [url])
+        executing = False
+        while not executing:
+            try:
+                cur.execute(query, [url])
+                executing = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
+                time.sleep(0.1)
         game_bool = [game[0] for game in cur.fetchall()][0]
         if game_bool:
             print('[INFO] %s игра уже есть в базе ' % str(url))
@@ -294,7 +390,8 @@ class ParserThread(QThread):
                     self.out_match_data['req_api'] = req_api
                     print(self.out_match_data)
                     if 'Canceled' != result and 'awarded' not in result:
-                         self.add_game_in_db()
+                        self.add_game_in_db()
+                        self.add_bet_in_db()
 
     def add_game_in_db(self):
         """
@@ -316,9 +413,94 @@ class ParserThread(QThread):
                           self.out_match_data['champ'],
                           self.out_match_data['req_api']
                           ]
-        cur.execute('INSERT INTO game (command1,command2,url,date,timematch,'
-                    'result,sport,country,liga,url_api) '
-                    'VALUES(?,?,?,?,?,?,?,?,?,?)', input_data)
+        executing = False
+        while not executing:
+            try:
+                cur.execute('INSERT INTO game (command1,command2,url,date,timematch,'
+                            'result,sport,country,liga,url_api) '
+                            'VALUES(?,?,?,?,?,?,?,?,?,?)', input_data)
+                executing = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
+                time.sleep(0.1)
+        commited = False
+        while not commited:
+            try:
+                con.commit()
+                commited = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
+                time.sleep(0.1)
+        print('[INFO] игра %s добавлена в базу' % str(input_data[0:2]))
+        self.counter_game += 1
+        self.update_label()
+        print('[INFO] Добавлено игр ' + str(self.counter_game))
+        cur.close()
+        con.close()
+
+    def add_bet_in_db(self):
+        """
+                Добавление коэф-тов в бд
+                :return:
+                """
+        print('[INFO] add bets in db.....')
+        start = time.time()
+        con = sqlite3.connect(self.db)
+        cur = con.cursor()
+        query = 'SELECT id,url FROM game'
+        executing = False
+        while not executing:
+            try:
+                cur.execute(query)
+                executing = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
+                time.sleep(0.1)
+        data_game_dict = {}
+        for game in cur.fetchall():
+            data_game_dict[game[0]] = game[1]
+        key_game = None
+        for key, item in data_game_dict.items():
+            if item == self.out_match_data['url']:
+                key_game = key
+                break
+        for key, item in self.out_match_data['odds'].items():
+            self.add_bookmaker_in_db(key, cur, con)
+            key_bookmaker = None
+            query = 'SELECT * FROM bookmaker'
+            executing = False
+            while not executing:
+                try:
+                    cur.execute(query)
+                    executing = True
+                except sqlite3.OperationalError:
+                    print('[WARNING] База данных используется...')
+                    print('[WARNING] Ожидание...')
+                    time.sleep(0.1)
+            data_bookmakers = [[el for el in bookmaker] for bookmaker in cur.fetchall()]
+            for bookmaker in data_bookmakers:
+                if bookmaker[1] == key:
+                    key_bookmaker = bookmaker[0]
+                    break
+            data_out = []
+            if len(item) == 4:
+                data_out = [key_bookmaker, item[0], item[1], item[2], key_game, item[3]]
+            elif len(item) == 3:
+                data_out = [key_bookmaker, item[0], 0, item[1], key_game, item[2]]
+            executing = False
+            while not executing:
+                try:
+                    cur.execute('INSERT INTO bet (bookmaker_id,p1,x,p2,game_id,open_time) VALUES(?,?,?,?,?,?)', data_out)
+                    executing = True
+                except sqlite3.OperationalError:
+                    print('[WARNING] База данных используется...')
+                    print('[WARNING] Ожидание...')
+                    time.sleep(0.1)
+            self.counter_bet += 1
+        print('[INFO] Кол-во добавленных ставок ' + str(self.counter_bet))
         commited = False
         while not commited:
             try:
@@ -328,11 +510,57 @@ class ParserThread(QThread):
                 print('[WARNING] База данных используется...')
                 print('[WARNING] Ожидание...')
                 time.sleep(0.2)
-        print('[INFO] игра %s добавлена в базу' % str(input_data[0:2]))
-        self.counter_game += 1
-        print('[INFO] Добавлено игр ' + str(self.counter_game))
+        end = time.time()
+        time_compl = end - start
+        print('[INFO]Время добавления ставок в базу %s' % str(time_compl))
         cur.close()
         con.close()
+
+    @staticmethod
+    def add_bookmaker_in_db(name: str, cur, con):
+        """
+        Добавление букмекера в базу данных
+        :param name:
+        название бк
+        :param cur:
+        cursor бд
+        :param con:
+        connect бд
+        :return:
+        """
+        query = 'SELECT * FROM bookmaker'
+        executing = False
+        while not executing:
+            try:
+                cur.execute(query)
+                executing = True
+            except sqlite3.OperationalError:
+                print('[WARNING] База данных используется...')
+                print('[WARNING] Ожидание...')
+                time.sleep(0.1)
+        data_name = [name[1] for name in cur.fetchall()]
+        if name in data_name:
+            return
+        else:
+            executing = False
+            while not executing:
+                try:
+                    cur.execute('INSERT INTO bookmaker (name) VALUES(?)', [name])
+                    executing = True
+                except sqlite3.OperationalError:
+                    print('[WARNING] База данных используется...')
+                    print('[WARNING] Ожидание...')
+                    time.sleep(0.1)
+            commited = False
+            while not commited:
+                try:
+                    con.commit()
+                    commited = True
+                except sqlite3.OperationalError:
+                    print('[WARNING] База данных используется...')
+                    print('[WARNING] Ожидание...')
+                    time.sleep(0.2)
+            print('[INFO] Букмекер %s добавлен в базу' % name)
 
     def get_match_data(self, url: str):
         """
@@ -510,34 +738,32 @@ class ParserThread(QThread):
                             out_dict_odds[self.bookmakersData[bk_id]['WebName']]['open_odds'] = odds
                     else:
                         out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
-        if full:
-            for bk_id, change_time in dict_opening_change_time.items():
-                if type(change_time) is list:
-                    openning_change_times = change_time
-                    if bk_id in self.bookmakersData:
-                        out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] = \
-                            openning_change_times
-                else:
-                    openning_change_times = [None, None, None]
-                    if bk_id in self.bookmakersData:
-                        for pos, item in change_time.items():
-                            if pos == '0':
-                                if item:
-                                    openning_change_times[0] = item
-                                else:
-                                    openning_change_times[0] = dict_change_time[bk_id]['0']
-                            elif pos == '1':
-                                if item:
-                                    openning_change_times[1] = item
-                                else:
-                                    openning_change_times[1] = dict_change_time[bk_id]['1']
-                            elif pos == '2':
-                                if item:
-                                    openning_change_times[2] = item
-                                else:
-                                    openning_change_times[2] = dict_change_time[bk_id]['2']
-                        out_dict_odds[self.bookmakersData[bk_id]['WebName']]['openning_change_times'] =\
-                            openning_change_times
+        for bk_id, change_time in dict_opening_change_time.items():
+            print(change_time)
+            if type(change_time) is list:
+                openning_change_times = change_time
+                if bk_id in self.bookmakersData:
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
+            else:
+                openning_change_times = [None, None, None]
+                if bk_id in self.bookmakersData:
+                    for pos, item in change_time.items():
+                        if pos == '0':
+                            if item:
+                                openning_change_times[0] = item
+                            else:
+                                openning_change_times[0] = dict_change_time[bk_id]['0']
+                        elif pos == '1':
+                            if item:
+                                openning_change_times[1] = item
+                            else:
+                                openning_change_times[1] = dict_change_time[bk_id]['1']
+                        elif pos == '2':
+                            if item:
+                                openning_change_times[2] = item
+                            else:
+                                openning_change_times[2] = dict_change_time[bk_id]['2']
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
         if not full:
             print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))
             print('[INFO] Коэ-ты:')
@@ -552,6 +778,7 @@ class ParserThread(QThread):
         except Exception as ex:
             print(ex)
             print(traceback.format_exc())
+
 
 def main():
     try:

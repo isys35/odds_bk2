@@ -48,7 +48,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
-        self.db = 'oddsportal.db'
+        self.db = 'soccer.db'
         self.parsing = False
         self.logotypes_path = self.get_logotype_path()
         self.data_bookmaker = []

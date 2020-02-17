@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>896</width>
-    <height>637</height>
+    <height>737</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,35 +16,72 @@
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="1" column="1">
-      <widget class="QGroupBox" name="groupBox_3">
+     <item row="3" column="0">
+      <widget class="QGroupBox" name="groupBox_5">
        <property name="title">
-        <string>Поток 2</string>
+        <string>Поток 5</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_7">
+       <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <widget class="QLabel" name="label_16">
+         <widget class="QLabel" name="label_8">
           <property name="text">
            <string>Состояние:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_17">
+         <widget class="QLabel" name="label_10">
           <property name="text">
            <string>Страна:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_18">
+         <widget class="QLabel" name="label_9">
           <property name="text">
            <string>Чемпионат:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_36">
+         <widget class="QLabel" name="label_33">
+          <property name="text">
+           <string>Количество добавленных игр:</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QGroupBox" name="groupBox_7">
+       <property name="title">
+        <string>Поток 7</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="label_11">
+          <property name="text">
+           <string>Состояние:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_12">
+          <property name="text">
+           <string>Страна:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Чемпионат:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_34">
           <property name="text">
            <string>Количество добавленных игр:</string>
           </property>
@@ -90,109 +127,35 @@
        </layout>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QGroupBox" name="groupBox_4">
+     <item row="1" column="1">
+      <widget class="QGroupBox" name="groupBox_3">
        <property name="title">
-        <string>Поток 4</string>
+        <string>Поток 2</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_8">
+       <layout class="QVBoxLayout" name="verticalLayout_7">
         <item>
-         <widget class="QLabel" name="label_19">
+         <widget class="QLabel" name="label_16">
           <property name="text">
            <string>Состояние:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_21">
+         <widget class="QLabel" name="label_17">
           <property name="text">
            <string>Страна:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_20">
+         <widget class="QLabel" name="label_18">
           <property name="text">
            <string>Чемпионат:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_37">
-          <property name="text">
-           <string>Количество добавленных игр:</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item row="5" column="1">
-      <widget class="QGroupBox" name="groupBox_10">
-       <property name="title">
-        <string>Поток 10</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_11">
-        <item>
-         <widget class="QLabel" name="label_30">
-          <property name="text">
-           <string>Состояние:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_29">
-          <property name="text">
-           <string>Страна:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_28">
-          <property name="text">
-           <string>Чемпионат:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_40">
-          <property name="text">
-           <string>Количество добавленных игр:</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QGroupBox" name="groupBox_5">
-       <property name="title">
-        <string>Поток 5</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_5">
-        <item>
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>Состояние:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_10">
-          <property name="text">
-           <string>Страна:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_9">
-          <property name="text">
-           <string>Чемпионат:</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_33">
+         <widget class="QLabel" name="label_36">
           <property name="text">
            <string>Количество добавленных игр:</string>
           </property>
@@ -238,35 +201,35 @@
        </layout>
       </widget>
      </item>
-     <item row="4" column="0">
-      <widget class="QGroupBox" name="groupBox_7">
+     <item row="5" column="1">
+      <widget class="QGroupBox" name="groupBox_10">
        <property name="title">
-        <string>Поток 7</string>
+        <string>Поток 10</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout">
+       <layout class="QVBoxLayout" name="verticalLayout_11">
         <item>
-         <widget class="QLabel" name="label_11">
+         <widget class="QLabel" name="label_30">
           <property name="text">
            <string>Состояние:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_12">
+         <widget class="QLabel" name="label_29">
           <property name="text">
            <string>Страна:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label">
+         <widget class="QLabel" name="label_28">
           <property name="text">
            <string>Чемпионат:</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_34">
+         <widget class="QLabel" name="label_40">
           <property name="text">
            <string>Количество добавленных игр:</string>
           </property>
@@ -404,12 +367,56 @@
        </item>
       </layout>
      </item>
-     <item row="0" column="1">
-      <widget class="QPushButton" name="pushButton_2">
-       <property name="text">
-        <string>ПАРСИНГ</string>
+     <item row="2" column="1">
+      <widget class="QGroupBox" name="groupBox_4">
+       <property name="title">
+        <string>Поток 4</string>
        </property>
+       <layout class="QVBoxLayout" name="verticalLayout_8">
+        <item>
+         <widget class="QLabel" name="label_19">
+          <property name="text">
+           <string>Состояние:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_21">
+          <property name="text">
+           <string>Страна:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_20">
+          <property name="text">
+           <string>Чемпионат:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_37">
+          <property name="text">
+           <string>Количество добавленных игр:</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
+     </item>
+     <item row="0" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QComboBox" name="comboBox"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pushButton_2">
+         <property name="text">
+          <string>ПАРСИНГ</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

@@ -15,6 +15,7 @@ import json
 import time
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.common import exceptions
 from browsermobproxy import Server
 from collections import Counter
 
@@ -220,7 +221,14 @@ class ParserThread(QThread):
             years_pages = years_menu[0].select('a')
             first_page = years_pages[0]['href']
             print(first_page)
-            self.browser.get(self.main_page + self.href)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(self.main_page + self.href)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
             content_first_page = self.browser.page_source
             soup_champ = BS(content_first_page, 'html.parser')
             string_sport = soup_champ.select('#breadcrumb')[0].select('a')[1].text
@@ -250,7 +258,14 @@ class ParserThread(QThread):
                     continue
                 print('[INFO] Год не полностью в базе')
                 if year_page != self.browser.current_url:
-                    self.browser.get(year_page)
+                    browse = False
+                    while not browse:
+                        try:
+                            self.browser.get(year_page)
+                            browse = True
+                        except exceptions.WebDriverException:
+                            print('[INFO] Не удалось подключиться')
+                            time.sleep(5)
                 soup_pagination = BS(self.browser.page_source, 'html.parser')
                 pagination = soup_pagination.select('#pagination')
                 if not pagination:
@@ -276,7 +291,14 @@ class ParserThread(QThread):
         bool
         """
         if champ_url != self.browser.current_url:
-            self.browser.get(champ_url)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(champ_url)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
         content_browser = self.browser.page_source
         soup_champ = BS(content_browser, 'html.parser')
         trs = soup_champ.select('#tournamentTable')[0].select('tr')
@@ -343,8 +365,22 @@ class ParserThread(QThread):
         """
         print(url)
         if url != self.browser.current_url:
-            self.browser.get(self.main_page)
-            self.browser.get(url)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(self.main_page)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(url)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
         content_browser = self.browser.page_source
         soup_champ = BS(content_browser, 'html.parser')
         trs = soup_champ.select('#tournamentTable')[0].select('tr')
@@ -366,8 +402,22 @@ class ParserThread(QThread):
                 count_check_page += 1
                 if count_check_page == 50:
                     count_check_page = 0
-                    self.browser.get(self.main_page)
-                    self.browser.get(url)
+                    browse = False
+                    while not browse:
+                        try:
+                            self.browser.get(self.main_page)
+                            browse = True
+                        except exceptions.WebDriverException:
+                            print('[INFO] Не удалось подключиться')
+                            time.sleep(5)
+                    browse = False
+                    while not browse:
+                        try:
+                            self.browser.get(url)
+                            browse = True
+                        except exceptions.WebDriverException:
+                            print('[INFO] Не удалось подключиться')
+                            time.sleep(5)
             print('[INFO] Страница верная')
         for tr in trs:
             if 'deactivate' in tr['class']:
@@ -612,7 +662,14 @@ class ParserThread(QThread):
         while not request_odds_url:
             print('[INFO] Получение API запроса для %s' % url)
             self.proxy.new_har('oddsportal')
-            self.browser.get(url)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(url)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
             out = self.proxy.har
             for el in out['log']['entries']:
                 if 'https://fb.oddsportal.com/feed/match/' in el['request']['url']:
@@ -628,7 +685,14 @@ class ParserThread(QThread):
         :return:
         """
         if url != self.browser.current_url:
-            self.browser.get(url)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(url)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
         content_match = self.browser.page_source
         soup_liga = BS(content_match, 'html.parser')
         col_content = soup_liga.select('#col-content')
@@ -648,7 +712,14 @@ class ParserThread(QThread):
         :return:
         """
         if url != self.browser.current_url:
-            self.browser.get(url)
+            browse = False
+            while not browse:
+                try:
+                    self.browser.get(url)
+                    browse = True
+                except exceptions.WebDriverException:
+                    print('[INFO] Не удалось подключиться')
+                    time.sleep(5)
         content_match = self.browser.page_source
         soup_liga = BS(content_match, 'html.parser')
         col_content = soup_liga.select('#col-content')

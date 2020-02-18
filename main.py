@@ -122,6 +122,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.finded_games = self.find_match(self.get_select_bk(), self.lineEdit.text(),
                                             self.lineEdit_3.text(),
                                             self.lineEdit_2.text())
+        print('dasdasdsa')
+        print(self.finded_games)
 
     def find_games_href(self):
         href = self.lineEdit_4.text()
@@ -247,8 +249,10 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             print('[WARNING] Введенны не все коэф-ты')
             return
         print('[INFO] Поиск в базе игры с букмекером {} П1 = {} X = {} П2 = {}'.format(bookmaker, p1, x, p2))
-        query = 'SELECT game_id FROM bet WHERE bookmaker_id = ? AND p1 = ? AND x = ? AND p2 = ?'
-        cur.execute(query, [bookmaker_id, p1, x, p2])
+        query = 'SELECT game_id FROM bet WHERE ' \
+                'bookmaker_id = {} AND p1 = {} AND x = {} AND p2 = {}'.format(bookmaker_id, p1, x, p2)
+        print([bookmaker_id, p1, x, p2])
+        cur.execute(query)
         matches_finded = []
         for match_id in cur.fetchall():
             if match_id[0] not in matches_finded:
@@ -261,12 +265,11 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             for game_id in matches_finded:
 
                 query = '''
-                            SELECT g.id, g.command1, g.command2, g.url, g.date, g.timematch,
-                            g.result, g.sport, g.country, g.liga, info.file_path FROM game g
-                            LEFT JOIN game_info info ON g.id = info.game_id 
-                            WHERE g.id IS ?
-                        '''
-                cur.execute(query, [game_id])
+                            SELECT id, command1, command2, url, date, timematch,
+                            result, sport, country, liga, url_api FROM game 
+                            WHERE id = {}
+                        '''.format(game_id)
+                cur.execute(query)
                 data_list = cur.fetchone()
                 data_dict = {'id': data_list[0],
                              'command1': data_list[1],
@@ -278,13 +281,14 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                              'sport': data_list[7],
                              'country': data_list[8],
                              'champ': data_list[9],
-                             'game_info': data_list[10]}
+                             'url_api': data_list[10]}
                 games.append(data_dict)
             p1_out = 0
             p2_out = 0
             x_out = 0
             for game in games:
                 result = game['result']
+                print(game)
                 p1_r, p2_r = self.get_point_result(result)
                 if float(p1_r) > float(p2_r):
                     p1_out += 1
@@ -393,6 +397,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_page_in_browser(row, column))
 
     def update_table_games(self, games):
+        print(games)
         """
         Обновить таблицу с играми
         :param games:
@@ -450,10 +455,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.tableWidget.setItem(games.index(game), 9, item_click)
             self.tableWidget.resizeColumnToContents(9)
             item_info = QtWidgets.QTableWidgetItem()
-            if game['game_info']:
-                item_info.setText('Открыть файл')
-            else:
-                item_info.setText('Файл отсутствует')
+            item_info.setText('Файл информации')
             self.tableWidget.setItem(games.index(game), 10, item_info)
             self.tableWidget.resizeColumnToContents(10)
 
@@ -529,10 +531,14 @@ class ParsingThread(QThread):
 
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
-    window = MainApp()
-    window.show()
-    app.exec_()
+    try:
+        app = QtWidgets.QApplication(sys.argv)
+        window = MainApp()
+        window.show()
+        app.exec_()
+    except Exception as ex:
+        print(ex)
+        print(traceback.format_exc())
 
 
 if __name__ == '__main__':

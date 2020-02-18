@@ -81,6 +81,7 @@ class GameInfo:
         con.close()
 
     def save_data_in_file(self, data, url):
+        print(data)
         game_info_folder = 'game_info/'
         file_name =game_info_folder + url.replace('/', '').split('-')[-1] + '.xls'
         wb = xlwt.Workbook()

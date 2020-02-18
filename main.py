@@ -12,8 +12,11 @@ from parser_odds import Parser
 import webbrowser
 import json
 import time
+import xlwt
 from collections import Counter
-
+import win32com.client
+import psutil
+import subprocess
 
 def eror_handler(func):
     def wrapper(self):
@@ -389,12 +392,14 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
     def __init__(self):
         super().__init__()
+        self.db = 'soccer.db'
         self.setupUi(self)
         self.games = []
         self.lineEdit.textChanged.connect(self.change_filter)
         self.lineEdit_2.textChanged.connect(self.change_filter)
         self.lineEdit_3.textChanged.connect(self.change_filter)
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_page_in_browser(row, column))
+        self.tableWidget.cellClicked.connect(lambda row, column: self.open_excel_file(row, column))
 
     def update_table_games(self, games):
         print(games)
@@ -485,6 +490,107 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         if column == 9:
             url = self.tableWidget.item(row, 8).text()
             webbrowser.open(url)
+
+    @eror_handler_args
+    def open_excel_file(self, row, column):
+        if column == 10:
+            url = self.tableWidget.item(row, 8).text()
+            data = self.get_data(url)
+            self.save_data_in_file(data, url)
+
+    def get_data(self, url):
+        print(url)
+        con = sqlite3.connect(self.db)
+        cur = con.cursor()
+        query = 'SELECT book.name, b.p1, b.x, b.p2, b.open_time, g.sport,' \
+                ' g.country, g.command1, g.command2, g.liga, g.result, g.date, g.timematch  ' \
+                ' FROM bet b' \
+                ' JOIN bookmaker book ON b.bookmaker_id = book.id JOIN game g ON b.game_id = g.id ' \
+                'WHERE g.url = ?'
+        cur.execute(query, [url])
+        data = cur.fetchall()
+        cur.close()
+        con.close()
+        return data
+
+    def save_data_in_file(self, data, url):
+        file_path = 'game_info/'
+        file_name = file_path + url.replace('/', '').split('-')[-1] + '.xls'
+        wb = xlwt.Workbook()
+        ws = wb.add_sheet('sheet')
+        aligment = xlwt.Alignment()
+        aligment.horz = xlwt.Alignment.HORZ_CENTER
+        style_centr_aligment = xlwt.XFStyle()
+        style_centr_aligment.alignment = aligment
+        #ws.col(2).width = 6000
+        ws.col(0).width = 4000
+        ws.col(4).width = 6000
+        #ws.col(6).width = 6000
+        ws.write(0, 0, str(data[0][5]))
+        ws.write(0, 1, str(data[0][6]))
+        ws.write(0, 4, str(data[0][7]))
+        ws.write(0, 2, str(data[0][8]))
+        ws.write(0, 3, str(data[0][9]))
+        ws.write(1, 0, str(data[0][11]))
+        ws.write(1, 1, str(data[0][12]))
+        ws.write(2, 0, str(data[0][10]))
+        ws.write(4, 0, 'Букмекер')
+        ws.write(4, 1, 'П1', style_centr_aligment)
+        ws.write(4, 2, 'X', style_centr_aligment)
+        ws.write(4, 3, 'П2', style_centr_aligment)
+        ws.write(4, 4, 'Время', style_centr_aligment)
+        ws.write(4, 5, 'Маржа', style_centr_aligment)
+        target_row = 5
+        list_for_excel = []
+        for bookmaker in data:
+            list_for_excel.append([bookmaker[0],
+                                   bookmaker[1],
+                                   bookmaker[2],
+                                   bookmaker[3],
+                                   bookmaker[4]])
+        list_for_excel.sort(key=lambda i: i[4])
+        for el in list_for_excel:
+            ws.write(target_row, 0, el[0])
+            ws.write(target_row, 1, el[1], style_centr_aligment)
+            ws.write(target_row, 4, str(time.ctime(el[4])).split(' ', 1)[1])
+            ws.write(target_row, 2, el[2], style_centr_aligment)
+            ws.write(target_row, 3, el[3], style_centr_aligment)
+            major = ((1 / el[1] * 100)
+                     + (1 / el[2] * 100)
+                     + (1 / el[3] * 100)) - 100
+            ws.write(target_row, 5, round(major, 2), style_centr_aligment)
+            target_row += 1
+            p1_real = el[1] * (1+major/100)
+            x_real = el[2] * (1 + major / 100)
+            p2_real = el[3] * (1 + major / 100)
+            ws.write(target_row, 1, round(p1_real, 2), style_centr_aligment)
+            ws.write(target_row, 2, round(x_real, 2), style_centr_aligment)
+            ws.write(target_row, 3, round(p2_real, 2), style_centr_aligment)
+            target_row += 1
+            p1delta = p1_real-el[1]
+            if p1_real > el[1]:
+                p1delta = '+' + str(round(p1delta, 2))
+            else:
+                p1delta = '-' + str(round(p1delta, 2))
+            xdelta = x_real - el[2]
+            if x_real > el[2]:
+                xdelta = '+' + str(round(xdelta, 2))
+            else:
+                xdelta = '-' + str(round(xdelta, 2))
+            p2delta = p2_real - el[3]
+            if p2_real > el[3]:
+                p2delta = '+' + str(round(p2delta, 2))
+            else:
+                p2delta = '-' + str(round(p2delta, 2))
+            ws.write(target_row, 1, p1delta, style_centr_aligment)
+            ws.write(target_row, 2, xdelta, style_centr_aligment)
+            ws.write(target_row, 3, p2delta, style_centr_aligment)
+            target_row += 1
+        wb.save(file_name)
+        full_path = 'D:/Project/odds_bk2/'
+        with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
+            doc.poll()
+
 
 
 class ParsingThread(QThread):

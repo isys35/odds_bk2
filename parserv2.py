@@ -143,6 +143,7 @@ class ManagerPars(QThread):
         href_championships = [championship.select('a')[0]['href'] for championship in championships
                               if len(championship.select('a')) > 0]
         href_championships_soccer = [href for href in href_championships if href.split('/')[1] == 'soccer']
+        print(href_championships_soccer)
         for href in href_championships_soccer:
             if href not in self.hrefs_pars:
                 self.hrefs_pars.append(href)
@@ -151,7 +152,7 @@ class ManagerPars(QThread):
                 print('.......')
             for i in range(0, self.n_pars):
                 if not self.parsers[i].status:
-                    print(href)
+                    self.parsers[i].status = True
                     time.sleep(.2)
                     self.parsers[i].href = href
                     self.parsers[i].start()
@@ -780,7 +781,6 @@ class ParserThread(QThread):
                                                                                               None,
                                                                                               dict_change_time[bk_id][
                                                                                                   pos]])
-
         for bk_id, odd in dict_openodds.items():
             if type(odd) is list:
                 odds = odd
@@ -810,11 +810,13 @@ class ParserThread(QThread):
                     else:
                         out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
         for bk_id, change_time in dict_opening_change_time.items():
-            print(change_time)
             if type(change_time) is list:
                 openning_change_times = change_time
                 if bk_id in self.bookmakersData:
-                    out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
+                    if openning_change_times[0]:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
+                    else:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(dict_change_time[bk_id][0])
             else:
                 openning_change_times = [None, None, None]
                 if bk_id in self.bookmakersData:
@@ -834,6 +836,8 @@ class ParserThread(QThread):
                                 openning_change_times[2] = item
                             else:
                                 openning_change_times[2] = dict_change_time[bk_id]['2']
+                    if not openning_change_times[0]:
+                        print('проверка времени', change_time)
                     out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
         if not full:
             print('[INFO] Кол-во букмеккеров в игре ' + str(len(out_dict_odds)))

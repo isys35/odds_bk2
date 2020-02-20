@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>896</width>
-    <height>737</height>
+    <width>732</width>
+    <height>760</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -355,6 +355,20 @@
         <widget class="QLabel" name="label_41">
          <property name="text">
           <string>Количество игр в базе:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_42">
+         <property name="text">
+          <string>Количество добавленных игр:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_43">
+         <property name="text">
+          <string>Скорость:</string>
          </property>
         </widget>
        </item>

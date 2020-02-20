@@ -68,6 +68,7 @@ class ManagerPars(QThread):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
+        self.start_time = time.time()
         self.labels = [
             {
                 'status': self.window.label_3,
@@ -134,6 +135,15 @@ class ManagerPars(QThread):
         ]
         self.parsers = [ParserThread(self.labels[i]) for i in range(0, self.n_pars)]
 
+    def update_label_info(self):
+        count = sum([pars.counter_game for pars in self.parsers])
+        self.window.label_42.setText(f'Количество добавленных игр: {count}')
+        delta_time = time.time() - self.start_time
+        game_per_sec = count/delta_time
+        game_per_hour = round(game_per_sec*60)
+        self.window.label_43.setText(f'Скорость : {game_per_hour} игр/минуту')
+
+
     def pars(self):
         soccer_url = 'https://www.oddsportal.com/results/#soccer'
         r = requests.get(soccer_url, headers=self.headers)
@@ -144,11 +154,13 @@ class ManagerPars(QThread):
                               if len(championship.select('a')) > 0]
         href_championships_soccer = [href for href in href_championships if href.split('/')[1] == 'soccer']
         print(href_championships_soccer)
+        self.start_time = time.time()
         for href in href_championships_soccer:
             if href not in self.hrefs_pars:
                 self.hrefs_pars.append(href)
             while not False in [self.parsers[i].status for i in range(0, self.n_pars)]:
-                time.sleep(.2)
+                time.sleep(1)
+                self.update_label_info()
                 print('.......')
             for i in range(0, self.n_pars):
                 if not self.parsers[i].status:

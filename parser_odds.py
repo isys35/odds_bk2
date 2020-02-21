@@ -53,6 +53,7 @@ class Parser:
         profile.set_proxy(self.proxy.selenium_proxy())
         self.browser = webdriver.Firefox(firefox_profile=profile, options=options)
 
+
     def start(self, sport, continue_parsing=False, last_year=False):
         """
         Получение тегов чемпионата

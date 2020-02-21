@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1225</width>
-    <height>888</height>
+    <width>934</width>
+    <height>829</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -117,7 +117,7 @@
                   <x>0</x>
                   <y>0</y>
                   <width>324</width>
-                  <height>703</height>
+                  <height>644</height>
                  </rect>
                 </property>
                 <layout class="QVBoxLayout" name="verticalLayout_13">
@@ -300,31 +300,6 @@
                      <widget class="QPushButton" name="pushButton_6">
                       <property name="text">
                        <string>Найти совпадения</string>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
-                     <widget class="QPushButton" name="pushButton_7">
-                      <property name="text">
-                       <string>Открыть файл</string>
-                      </property>
-                      <property name="shortcut">
-                       <string notr="true"/>
-                      </property>
-                      <property name="checkable">
-                       <bool>false</bool>
-                      </property>
-                      <property name="checked">
-                       <bool>false</bool>
-                      </property>
-                      <property name="autoRepeat">
-                       <bool>false</bool>
-                      </property>
-                      <property name="autoExclusive">
-                       <bool>false</bool>
-                      </property>
-                      <property name="default">
-                       <bool>false</bool>
                       </property>
                      </widget>
                     </item>

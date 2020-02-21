@@ -8,7 +8,7 @@ from browsermobproxy import Server
 import sqlite3
 import mainwindow
 import dialog
-from parserv2 import ParserThread
+from parser_odds import Parser
 import webbrowser
 import json
 import time
@@ -47,86 +47,6 @@ def brenchmark(func):
     return wrapper
 
 
-def save_data_in_file(data, url):
-    print(data)
-    file_path = 'game_info/'
-    file_name = file_path + url.replace('/', '').split('-')[-1] + '.xls'
-    wb = xlwt.Workbook()
-    ws = wb.add_sheet('sheet')
-    aligment = xlwt.Alignment()
-    aligment.horz = xlwt.Alignment.HORZ_CENTER
-    style_centr_aligment = xlwt.XFStyle()
-    style_centr_aligment.alignment = aligment
-    #ws.col(2).width = 6000
-    ws.col(0).width = 4000
-    ws.col(4).width = 6000
-    #ws.col(6).width = 6000
-    ws.write(0, 0, str(data[0][5]))
-    ws.write(0, 1, str(data[0][6]))
-    ws.write(0, 4, str(data[0][7]))
-    ws.write(0, 2, str(data[0][8]))
-    ws.write(0, 3, str(data[0][9]))
-    ws.write(1, 0, str(data[0][11]))
-    ws.write(1, 1, str(data[0][12]))
-    ws.write(2, 0, str(data[0][10]))
-    ws.write(4, 0, 'Букмекер')
-    ws.write(4, 1, 'П1', style_centr_aligment)
-    ws.write(4, 2, 'X', style_centr_aligment)
-    ws.write(4, 3, 'П2', style_centr_aligment)
-    ws.write(4, 4, 'Время', style_centr_aligment)
-    ws.write(4, 5, 'Маржа', style_centr_aligment)
-    target_row = 5
-    list_for_excel = []
-    for bookmaker in data:
-        list_for_excel.append([bookmaker[0],
-                                bookmaker[1],
-                                bookmaker[2],
-                                bookmaker[3],
-                                bookmaker[4]])
-    list_for_excel.sort(key=lambda i: i[4])
-    for el in list_for_excel:
-        ws.write(target_row, 0, el[0])
-        ws.write(target_row, 1, el[1], style_centr_aligment)
-        ws.write(target_row, 4, str(time.ctime(el[4])).split(' ', 1)[1])
-        ws.write(target_row, 2, el[2], style_centr_aligment)
-        ws.write(target_row, 3, el[3], style_centr_aligment)
-        major = ((1 / el[1] * 100)
-                    + (1 / el[2] * 100)
-                    + (1 / el[3] * 100)) - 100
-        ws.write(target_row, 5, round(major, 2), style_centr_aligment)
-        target_row += 1
-        p1_real = el[1] * (1+major/100)
-        x_real = el[2] * (1 + major / 100)
-        p2_real = el[3] * (1 + major / 100)
-        ws.write(target_row, 1, round(p1_real, 2), style_centr_aligment)
-        ws.write(target_row, 2, round(x_real, 2), style_centr_aligment)
-        ws.write(target_row, 3, round(p2_real, 2), style_centr_aligment)
-        target_row += 1
-        p1delta = p1_real-el[1]
-        if p1_real > el[1]:
-            p1delta = '+' + str(round(p1delta, 2))
-        else:
-            p1delta = '-' + str(round(p1delta, 2))
-        xdelta = x_real - el[2]
-        if x_real > el[2]:
-            xdelta = '+' + str(round(xdelta, 2))
-        else:
-            xdelta = '-' + str(round(xdelta, 2))
-        p2delta = p2_real - el[3]
-        if p2_real > el[3]:
-            p2delta = '+' + str(round(p2delta, 2))
-        else:
-            p2delta = '-' + str(round(p2delta, 2))
-        ws.write(target_row, 1, p1delta, style_centr_aligment)
-        ws.write(target_row, 2, xdelta, style_centr_aligment)
-        ws.write(target_row, 3, p2delta, style_centr_aligment)
-        target_row += 1
-    wb.save(file_name)
-    full_path = 'D:/Project/odds_bk2/'
-    with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
-        doc.poll()
-
-
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -143,9 +63,9 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.counter_bets = 0
         self.counter_games = 0
         self.pushButton_5.clicked.connect(lambda: self.open_dialog(self.finded_games))
-        #self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
-        #self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
-        #self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
+        self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
+        self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
+        self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
         self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
                              options={'existing_proxy_port_to_use': 8090})
         self.server.start()
@@ -205,19 +125,13 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.finded_games = self.find_match(self.get_select_bk(), self.lineEdit.text(),
                                             self.lineEdit_3.text(),
                                             self.lineEdit_2.text())
+        print('dasdasdsa')
+        print(self.finded_games)
 
     def find_games_href(self):
         href = self.lineEdit_4.text()
-        parser = ParserThread()
+        parser = Parser(server=self.server)
         data = parser.get_match_data(href)
-        breadcump = parser.get_breadcump(href)
-        _time = parser.get_date(href, full=True)
-        _time =_time.split(',')[-1]
-        sport = breadcump.split('»')[1]
-        country = breadcump.split('»')[2]
-        champ = breadcump.split('»')[3]
-        command1 = breadcump.split('»')[-1].split('-')[0]
-        command2 = breadcump.split('»')[-1].split('-')[-1]
         parser.browser.quit()
         p1_out = 0
         p2_out = 0
@@ -252,18 +166,14 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.label_13.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
         self.label_14.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
         self.label_15.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
-        data_out = []
-        for key in data[1]:
-            data_el = [key, data[1][key][0], data[1][key][1], data[1][key][2], data[1][key][3], sport, country,
-                        command1, command2, champ, data[0], data[2], _time]
-            data_out.append(data_el)
-        save_data_in_file(data_out, href)
         self.update_table_games()
 
     def update_table_games(self):
         games_sort = [[key, item] for key, item in self.findedgames_for_url.items()]
         games_sort.sort(key=lambda i: len(i[1][0]), reverse=True)
         self.tableWidget.clearContents()
+        print(self.findedgames_for_url)
+        print('')
         games_sort = [game for game in games_sort if len(game[1][0]) > 0]
         self.tableWidget.setRowCount(len(games_sort))
         for game in games_sort:
@@ -336,14 +246,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         cur = con.cursor()
         query = 'SELECT id FROM bookmaker WHERE name = ?'
         cur.execute(query, [bookmaker])
-        bookmaker_id_list = cur.fetchone()
-        if bookmaker_id_list:
-            bookmaker_id = bookmaker_id_list[0]
-        else:
-            cur.execute('INSERT INTO bookmaker (name) VALUES(?)', [bookmaker])
-            con.commit()
-            cur.execute(query, [bookmaker])
-            bookmaker_id = cur.fetchone()[0]
+        bookmaker_id = cur.fetchone()[0]
         # Добавить разные инфо если не введени какие нибудь из значений
         if not p1 or not x or not p2:
             print('[WARNING] Введенны не все коэф-ты')
@@ -388,6 +291,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             x_out = 0
             for game in games:
                 result = game['result']
+                print(game)
                 p1_r, p2_r = self.get_point_result(result)
                 if float(p1_r) > float(p2_r):
                     p1_out += 1
@@ -474,6 +378,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         dial.update_table_games(g)
         dial.exec_()
 
+    def start_thread_parsing(self, method):
+        """
+        Запуск потока парсера
+        :param method:
+        :return:
+        """
+        self.parsing = ParsingThread(self, method)
+        self.parsing.start()
+
+
 
 class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
     def __init__(self):
@@ -488,6 +402,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_excel_file(row, column))
 
     def update_table_games(self, games):
+        print(games)
         """
         Обновить таблицу с играми
         :param games:
@@ -581,7 +496,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         if column == 10:
             url = self.tableWidget.item(row, 8).text()
             data = self.get_data(url)
-            save_data_in_file(data, url)
+            self.save_data_in_file(data, url)
 
     def get_data(self, url):
         print(url)
@@ -597,6 +512,128 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         cur.close()
         con.close()
         return data
+
+    def save_data_in_file(self, data, url):
+        file_path = 'game_info/'
+        file_name = file_path + url.replace('/', '').split('-')[-1] + '.xls'
+        wb = xlwt.Workbook()
+        ws = wb.add_sheet('sheet')
+        aligment = xlwt.Alignment()
+        aligment.horz = xlwt.Alignment.HORZ_CENTER
+        style_centr_aligment = xlwt.XFStyle()
+        style_centr_aligment.alignment = aligment
+        #ws.col(2).width = 6000
+        ws.col(0).width = 4000
+        ws.col(4).width = 6000
+        #ws.col(6).width = 6000
+        ws.write(0, 0, str(data[0][5]))
+        ws.write(0, 1, str(data[0][6]))
+        ws.write(0, 4, str(data[0][7]))
+        ws.write(0, 2, str(data[0][8]))
+        ws.write(0, 3, str(data[0][9]))
+        ws.write(1, 0, str(data[0][11]))
+        ws.write(1, 1, str(data[0][12]))
+        ws.write(2, 0, str(data[0][10]))
+        ws.write(4, 0, 'Букмекер')
+        ws.write(4, 1, 'П1', style_centr_aligment)
+        ws.write(4, 2, 'X', style_centr_aligment)
+        ws.write(4, 3, 'П2', style_centr_aligment)
+        ws.write(4, 4, 'Время', style_centr_aligment)
+        ws.write(4, 5, 'Маржа', style_centr_aligment)
+        target_row = 5
+        list_for_excel = []
+        for bookmaker in data:
+            list_for_excel.append([bookmaker[0],
+                                   bookmaker[1],
+                                   bookmaker[2],
+                                   bookmaker[3],
+                                   bookmaker[4]])
+        list_for_excel.sort(key=lambda i: i[4])
+        for el in list_for_excel:
+            ws.write(target_row, 0, el[0])
+            ws.write(target_row, 1, el[1], style_centr_aligment)
+            ws.write(target_row, 4, str(time.ctime(el[4])).split(' ', 1)[1])
+            ws.write(target_row, 2, el[2], style_centr_aligment)
+            ws.write(target_row, 3, el[3], style_centr_aligment)
+            major = ((1 / el[1] * 100)
+                     + (1 / el[2] * 100)
+                     + (1 / el[3] * 100)) - 100
+            ws.write(target_row, 5, round(major, 2), style_centr_aligment)
+            target_row += 1
+            p1_real = el[1] * (1+major/100)
+            x_real = el[2] * (1 + major / 100)
+            p2_real = el[3] * (1 + major / 100)
+            ws.write(target_row, 1, round(p1_real, 2), style_centr_aligment)
+            ws.write(target_row, 2, round(x_real, 2), style_centr_aligment)
+            ws.write(target_row, 3, round(p2_real, 2), style_centr_aligment)
+            target_row += 1
+            p1delta = p1_real-el[1]
+            if p1_real > el[1]:
+                p1delta = '+' + str(round(p1delta, 2))
+            else:
+                p1delta = '-' + str(round(p1delta, 2))
+            xdelta = x_real - el[2]
+            if x_real > el[2]:
+                xdelta = '+' + str(round(xdelta, 2))
+            else:
+                xdelta = '-' + str(round(xdelta, 2))
+            p2delta = p2_real - el[3]
+            if p2_real > el[3]:
+                p2delta = '+' + str(round(p2delta, 2))
+            else:
+                p2delta = '-' + str(round(p2delta, 2))
+            ws.write(target_row, 1, p1delta, style_centr_aligment)
+            ws.write(target_row, 2, xdelta, style_centr_aligment)
+            ws.write(target_row, 3, p2delta, style_centr_aligment)
+            target_row += 1
+        wb.save(file_name)
+        full_path = 'D:/Project/odds_bk2/'
+        with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
+            doc.poll()
+
+
+
+class ParsingThread(QThread):
+
+    def __init__(self, window, method):
+        super().__init__()
+        self.window = window
+        self.label1 = self.window.label_2
+        self.label2 = self.window.label
+        self.label3 = self.window.label_3
+        self.parser = Parser(label_info=self.label1,
+                             label_info2=self.label2,
+                             label_info3=self.label3,
+                             server=self.window.server)
+        self.method = method
+
+    def update_db(self):
+        print('[INFO] Запускаем парсер')
+        if self.method == 'start':
+            self.parser.start('soccer')
+        elif self.method == 'continue':
+            self.parser.start('soccer', continue_parsing=True)
+        elif self.method == 'lastyear':
+            self.parser.start('soccer', last_year=True)
+        else:
+            print('[WARNING] Метод {} не найден '.format(self.method))
+
+    def run(self):
+        try:
+            self.update_db()
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
+            print('[INFO] Перезапуск парсера....')
+            time.sleep(5)
+            erorfile = str('[TIME]') + str(time.asctime()) + '\n'
+            erorfile += str(ex) + '\n'
+            erorfile += str(traceback.format_exc()) + '\n'
+            with open("erorfile.txt", "a") as append_file:
+                append_file.write(erorfile)
+            self.parser.browser.quit()
+            self.parser.browser.stop_client()
+            self.window.start_thread_parsing('continue')
 
 
 def main():

@@ -130,8 +130,6 @@ class ManagerPars(QThread):
                 'champ': self.window.label_28,
                 'count': self.window.label_40
             },
-
-
         ]
         self.parsers = [ParserThread(self.labels[i]) for i in range(0, self.n_pars)]
 
@@ -142,7 +140,6 @@ class ManagerPars(QThread):
         game_per_sec = count/delta_time
         game_per_hour = round(game_per_sec*60)
         self.window.label_43.setText(f'Скорость : {game_per_hour} игр/минуту')
-
 
     def pars(self):
         soccer_url = 'https://www.oddsportal.com/results/#soccer'
@@ -175,7 +172,7 @@ class ManagerPars(QThread):
 
 
 class ParserThread(QThread):
-    def __init__(self, labels):
+    def __init__(self, labels=None):
         super().__init__()
         self.labels = labels
         self.headers = {
@@ -192,6 +189,8 @@ class ParserThread(QThread):
         self.bookmakersData = self.get_bookmakersdata()
 
     def update_label(self):
+        if not self.labels:
+            return
         if self.status:
             self.labels['status'].setText('Состояние: in progress')
         if 'country' in self.out_match_data:
@@ -601,6 +600,7 @@ class ParserThread(QThread):
                 print('[WARNING] База данных используется...')
                 print('[WARNING] Ожидание...')
                 time.sleep(0.1)
+        print(cur)
         data_name = [name[1] for name in cur.fetchall()]
         if name in data_name:
             return
@@ -663,6 +663,15 @@ class ParserThread(QThread):
             print('[INFO]Время получения данных из игры %s' % str(time_compl))
             return [result, out_odds, date, request_odds_url]
         return [result, {}, date, request_odds_url]
+
+    def get_breadcump(self, url):
+        if url != self.browser.current_url:
+            self.browser.get(url)
+        content_match = self.browser.page_source
+        soup_liga = BS(content_match, 'html.parser')
+        breadcump = soup_liga.select('#breadcrumb')
+        breadcump_out = breadcump[0].text.replace('\nYou are here\n', '').replace('\n', ' ').replace('\t', '')
+        return breadcump_out
 
     def get_odds_response(self, url):
         """

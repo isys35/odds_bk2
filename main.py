@@ -257,8 +257,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             data_el = [key, data[1][key][0], data[1][key][1], data[1][key][2], data[1][key][3], sport, country,
                         command1, command2, champ, data[0], data[2], _time]
             data_out.append(data_el)
-        save_data_in_file(data_out, href)
         self.update_table_games()
+        save_data_in_file(data_out, href)
 
     def update_table_games(self):
         games_sort = [[key, item] for key, item in self.findedgames_for_url.items()]

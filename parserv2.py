@@ -869,11 +869,14 @@ class ParserThread(QThread):
         return out_dict_odds
 
     def run(self):
-        try:
-            self.pars()
-        except Exception as ex:
-            print(ex)
-            print(traceback.format_exc())
+        parsed = False
+        while not parsed:
+            try:
+                self.pars()
+                parsed = True
+            except Exception as ex:
+                print(ex)
+                print(traceback.format_exc())
 
 
 def main():

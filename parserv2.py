@@ -56,6 +56,9 @@ class MultiParsing(QtWidgets.QDialog, multiparser.Ui_Dialog):
         self.managepars = ManagerPars(int(self.comboBox.currentText()),self)
         self.managepars.start()
 
+    def continue_multi_parsing(self):
+        pass
+
 
 class ManagerPars(QThread):
     def __init__(self, n_pars, window):
@@ -68,6 +71,7 @@ class ManagerPars(QThread):
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
+        self.checkpoints = [None for _ in range(self.n_pars)]
         self.start_time = time.time()
         self.labels = [
             {
@@ -164,6 +168,7 @@ class ManagerPars(QThread):
                     self.parsers[i].status = True
                     time.sleep(.2)
                     self.parsers[i].href = href
+                    self.checkpoints[i] = href
                     self.parsers[i].start()
                     break
 

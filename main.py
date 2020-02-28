@@ -127,6 +127,30 @@ def save_data_in_file(data, url):
         doc.poll()
 
 
+def get_point_result(result):
+    if 'awarded' in result:
+        return 0, 0
+    if '(' in result:
+        time_results = result.split('(')[1].split(')')[0].split(', ')
+        if len(time_results) > 1:
+            t1_p1 = time_results[0].split(':')[0]
+            t1_p2 = time_results[0].split(':')[1]
+            t2_p1 = time_results[1].split(':')[0]
+            t2_p2 = time_results[1].split(':')[1]
+            p1 = float(t1_p1) + float(t2_p1)
+            p2 = float(t1_p2) + float(t2_p2)
+            return p1, p2
+        elif len(time_results) == 1:
+            p1 = float(time_results[0].split(':')[0])
+            p2 = float(time_results[0].split(':')[1])
+            return p1, p2
+    if 'Final result ' in result:
+        result_out = result.replace('Final result ', '').split(' ')[0]
+        p1 = float(result_out.split(':')[0])
+        p2 = float(result_out.split(':')[1])
+        return p1, p2
+
+
 class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -230,7 +254,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 self.findedgames_for_url[key] = [game_data, points]
                 for game in game_data:
                     result = game['result']
-                    p1_r, p2_r = self.get_point_result(result)
+                    p1_r, p2_r = get_point_result(result)
                     if float(p1_r) > float(p2_r):
                         self.findedgames_for_url[key][1][0] += 1
                         p1_out += 1
@@ -388,7 +412,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             x_out = 0
             for game in games:
                 result = game['result']
-                p1_r, p2_r = self.get_point_result(result)
+                p1_r, p2_r = get_point_result(result)
                 if float(p1_r) > float(p2_r):
                     p1_out += 1
                 elif float(p1_r) < float(p2_r):
@@ -423,37 +447,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             if child.widget():
                 child.widget().deleteLater()
 
-    @staticmethod
-    def get_point_result(result):
-        """
-        Получить результат матчей в числах
-        :param result:
-        Результат из базы
-        :return:
-        p1,p2 - количество очков у комманд
-        """
-        if 'awarded' in result:
-            return 0, 0
-        if '(' in result:
-            time_results = result.split('(')[1].split(')')[0].split(', ')
-            if len(time_results) > 1:
-                t1_p1 = time_results[0].split(':')[0]
-                t1_p2 = time_results[0].split(':')[1]
-                t2_p1 = time_results[1].split(':')[0]
-                t2_p2 = time_results[1].split(':')[1]
-                p1 = float(t1_p1) + float(t2_p1)
-                p2 = float(t1_p2) + float(t2_p2)
-                return p1, p2
-            elif len(time_results) == 1:
-                p1 = float(time_results[0].split(':')[0])
-                p2 = float(time_results[0].split(':')[1])
-                return p1, p2
-        if 'Final result ' in result:
-            result_out = result.replace('Final result ', '').split(' ')[0]
-            p1 = float(result_out.split(':')[0])
-            p2 = float(result_out.split(':')[1])
-            return p1, p2
-
     def unselect_allcheckbox(self, check_box):
         """
         снять выеделение со всех check_box
@@ -472,6 +465,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         dial = Dialog()
         dial.games = g
         dial.update_table_games(g)
+        dial.update_info(g)
         dial.exec_()
 
 
@@ -564,6 +558,139 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
                     and self.lineEdit_3.text() in champ_in_game:
                 games_filt.append(game)
         self.update_table_games(games_filt)
+        self.update_info(games_filt)
+
+    def update_info(self, games):
+        k1_1 = 0  # -0.5к1
+        k1_2 = 0  # -1.5к1
+        k1_3 = 0  # -2.5к1
+        k1_4 = 0  # -3.5к1
+        k1_5 = 0  # -4.5к1
+        k2_1 = 0  # -0.5к2
+        k2_2 = 0  # -1.5к2
+        k2_3 = 0  # -2.5к2
+        k2_4 = 0  # -3.5к2
+        k2_5 = 0  # -4.5к2
+        x = 0  # X
+        oz = 0  # ОЗ
+        tb1 = 0  # ТБ 0.5
+        tb2 = 0  # ТБ 1.5
+        tb3 = 0  # ТБ 2.5
+        tb4 = 0  # ТБ 3.5
+        for game in games:
+            p1, p2 = get_point_result(game['result'])
+            if p1 - p2 > 0.5:
+                k1_1 += 1
+            if p1 - p2 > 1.5:
+                k1_2 += 1
+            if p1 - p2 > 2.5:
+                k1_3 += 1
+            if p1 - p2 > 3.5:
+                k1_4 += 1
+            if p1 - p2 > 4.5:
+                k1_5 += 1
+            if p2 - p1 > 0.5:
+                k2_1 += 1
+            if p2 - p1 > 1.5:
+                k2_2 += 1
+            if p2 - p1 > 2.5:
+                k2_3 += 1
+            if p2 - p1 > 3.5:
+                k2_4 += 1
+            if p2 - p1 > 4.5:
+                k2_5 += 1
+            if p1 == p2:
+                x += 1
+            if p1 and p2:
+                oz += 1
+            if p1 + p2 > 0.5:
+                tb1 += 1
+            if p1 + p2 > 1.5:
+                tb2 += 1
+            if p1 + p2 > 2.5:
+                tb3 += 1
+            if p1 + p2 > 3.5:
+                tb4 += 1
+        if k1_1:
+            k1_1_p = round(100*k1_1/len(games))
+            k1_1_koef = round(100/k1_1_p,1)
+            self.label_6.setText(f' {k1_1_p}% ({k1_1}) ')
+            self.label_4.setText(str(k1_1_koef))
+        else:
+            self.label_6.setText('')
+            self.label_4.setText('')
+        if k1_2:
+            k1_2_p = round(100*k1_2/len(games))
+            k1_2_koef = round(100/k1_2_p,1)
+            self.label_11.setText(f' {k1_2_p}% ({k1_2}) ')
+            self.label_10.setText(str(k1_2_koef))
+        else:
+            self.label_11.setText('')
+            self.label_10.setText('')
+        if k1_3:
+            k1_3_p = round(100*k1_3/len(games))
+            k1_3_koef = round(100/k1_3_p,1)
+            self.label_14.setText(f' {k1_3_p}% ({k1_3}) ')
+            self.label_13.setText(str(k1_3_koef))
+        else:
+            self.label_14.setText('')
+            self.label_13.setText('')
+        if k1_4:
+            k1_4_p = round(100*k1_4/len(games))
+            k1_4_koef = round(100/k1_4_p,1)
+            self.label_17.setText(f' {k1_4_p}% ({k1_4}) ')
+            self.label_16.setText(str(k1_4_koef))
+        else:
+            self.label_17.setText('')
+            self.label_16.setText('')
+        if k1_5:
+            k1_5_p = round(100*k1_5/len(games))
+            k1_5_koef = round(100/k1_5_p,1)
+            self.label_7.setText(f' {k1_5_p}% ({k1_5}) ')
+            self.label_9.setText(str(k1_5_koef))
+        else:
+            self.label_7.setText('')
+            self.label_9.setText('')
+        if k2_1:
+            k2_1_p = round(100*k1_1/len(games))
+            k2_1_koef = round(100/k2_1_p,1)
+            self.label_44.setText(f' {k2_1_p}% ({k2_1}) ')
+            self.label_45.setText(str(k2_1_koef))
+        else:
+            self.label_44.setText('')
+            self.label_45.setText('')
+        if k2_2:
+            k2_2_p = round(100*k1_1/len(games))
+            k2_2_koef = round(100/k2_2_p,1)
+            self.label_38.setText(f' {k2_2_p}% ({k2_2}) ')
+            self.label_39.setText(str(k2_2_koef))
+        else:
+            self.label_38.setText('')
+            self.label_39.setText('')
+        if k2_3:
+            k2_3_p = round(100*k1_1/len(games))
+            k2_3_koef = round(100/k2_3_p,1)
+            self.label_35.setText(f' {k2_3_p}% ({k2_3}) ')
+            self.label_36.setText(str(k2_3_koef))
+        else:
+            self.label_35.setText('')
+            self.label_36.setText('')
+        if k2_4:
+            k2_4_p = round(100*k1_1/len(games))
+            k2_4_koef = round(100/k2_4_p,1)
+            self.label_41.setText(f' {k2_4_p}% ({k2_4}) ')
+            self.label_42.setText(str(k2_4_koef))
+        else:
+            self.label_41.setText('')
+            self.label_42.setText('')
+        if k2_5:
+            k2_5_p = round(100*k1_1/len(games))
+            k2_5_koef = round(100/k2_5_p,1)
+            self.label_47.setText(f' {k2_5_p}% ({k2_5}) ')
+            self.label_48.setText(str(k2_5_koef))
+        else:
+            self.label_47.setText('')
+            self.label_48.setText('')
 
     def open_page_in_browser(self, row, column):
         """

@@ -220,6 +220,7 @@ class Ui_Dialog(object):
         self.horizontalLayout_12.addWidget(self.label_21)
         self.label_20 = QtWidgets.QLabel(self.groupBox)
         self.label_20.setText("")
+        self.label_20.setAlignment(QtCore.Qt.AlignCenter)
         self.label_20.setObjectName("label_20")
         self.horizontalLayout_12.addWidget(self.label_20)
         self.label_19 = QtWidgets.QLabel(self.groupBox)

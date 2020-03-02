@@ -691,6 +691,54 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         else:
             self.label_47.setText('')
             self.label_48.setText('')
+        if x:
+            x_p = round(100*x/len(games))
+            x_koef = round(100 / x_p, 1)
+            self.label_50.setText(f' {x_p}% ({x}) ')
+            self.label_51.setText(str(x_koef))
+        else:
+            self.label_50.setText('')
+            self.label_51.setText('')
+        if oz:
+            oz_p = round(100 * oz / len(games))
+            oz_koef = round(100 / oz_p, 1)
+            self.label_53.setText(f' {oz_p}% ({oz}) ')
+            self.label_54.setText(str(oz_koef))
+        else:
+            self.label_53.setText('')
+            self.label_54.setText('')
+        if tb1:
+            tb1_p = round(100 * tb1 / len(games))
+            tb1_koef = round(100 / tb1_p, 1)
+            self.label_56.setText(f' {tb1_p}% ({tb1}) ')
+            self.label_57.setText(str(tb1_koef))
+        else:
+            self.label_56.setText('')
+            self.label_57.setText('')
+        if tb2:
+            tb2_p = round(100 * tb2 / len(games))
+            tb2_koef = round(100 / tb2_p, 1)
+            self.label_59.setText(f' {tb2_p}% ({tb2}) ')
+            self.label_60.setText(str(tb2_koef))
+        else:
+            self.label_59.setText('')
+            self.label_60.setText('')
+        if tb3:
+            tb3_p = round(100 * tb3 / len(games))
+            tb3_koef = round(100 / tb3_p, 1)
+            self.label_20.setText(f' {tb3_p}% ({tb3}) ')
+            self.label_19.setText(str(tb3_koef))
+        else:
+            self.label_20.setText('')
+            self.label_19.setText('')
+        if tb4:
+            tb4_p = round(100 * tb4 / len(games))
+            tb4_koef = round(100 / tb4_p, 1)
+            self.label_62.setText(f' {tb4_p}% ({tb4}) ')
+            self.label_63.setText(str(tb4_koef))
+        else:
+            self.label_62.setText('')
+            self.label_63.setText('')
 
     def open_page_in_browser(self, row, column):
         """

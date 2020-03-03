@@ -50,7 +50,7 @@ def brenchmark(func):
 def save_data_in_file(data, url):
     print(data)
     file_path = 'game_info/'
-    file_name = file_path + url.replace('/', '').split('-')[-1] + '.xls'
+    file_name = file_path + 'info.xls'
     wb = xlwt.Workbook()
     ws = wb.add_sheet('sheet')
     aligment = xlwt.Alignment()
@@ -246,6 +246,22 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         p1_out = 0
         p2_out = 0
         x_out = 0
+        k1_1 = 0  # -0.5к1
+        k1_2 = 0  # -1.5к1
+        k1_3 = 0  # -2.5к1
+        k1_4 = 0  # -3.5к1
+        k1_5 = 0  # -4.5к1
+        k2_1 = 0  # -0.5к2
+        k2_2 = 0  # -1.5к2
+        k2_3 = 0  # -2.5к2
+        k2_4 = 0  # -3.5к2
+        k2_5 = 0  # -4.5к2
+        x = 0  # X
+        oz = 0  # ОЗ
+        tb1 = 0  # ТБ 0.5
+        tb2 = 0  # ТБ 1.5
+        tb3 = 0  # ТБ 2.5
+        tb4 = 0  # ТБ 3.5
         self.findedgames_for_url = {}
         for key in data[1]:
             if key != 'Betfair Exchange':
@@ -264,6 +280,38 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                     elif float(p1_r) == float(p2_r):
                         self.findedgames_for_url[key][1][1] += 1
                         x_out += 1
+                    if p1_r - p2_r > 0.5:
+                        k1_1 += 1
+                    if p1_r - p2_r > 1.5:
+                        k1_2 += 1
+                    if p1_r - p2_r > 2.5:
+                        k1_3 += 1
+                    if p1_r - p2_r > 3.5:
+                        k1_4 += 1
+                    if p1_r - p2_r > 4.5:
+                        k1_5 += 1
+                    if p2_r - p1_r > 0.5:
+                        k2_1 += 1
+                    if p2_r - p1_r > 1.5:
+                        k2_2 += 1
+                    if p2_r - p1_r > 2.5:
+                        k2_3 += 1
+                    if p2_r - p1_r > 3.5:
+                        k2_4 += 1
+                    if p2_r - p1_r > 4.5:
+                        k2_5 += 1
+                    if p1_r == p2_r:
+                        x += 1
+                    if p1_r and p2_r:
+                        oz += 1
+                    if p1_r + p2_r > 0.5:
+                        tb1 += 1
+                    if p1_r + p2_r > 1.5:
+                        tb2 += 1
+                    if p1_r + p2_r > 2.5:
+                        tb3 += 1
+                    if p1_r + p2_r > 3.5:
+                        tb4 += 1
         all_out = p1_out + p2_out + x_out
         self.label_12.setText('Найдено матчей: {}'.format(all_out))
         p1_out_percent = 0
@@ -273,6 +321,134 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             p1_out_percent = 100 * p1_out / all_out
             p2_out_percent = 100 * p2_out / all_out
             x_out_percent = 100 * x_out / all_out
+        if k1_1:
+            k1_1_p = round(100*k1_1/all_out)
+            k1_1_koef = round(100/k1_1_p,2)
+            self.label_23.setText(f' {k1_1_p}% ({k1_1}) ')
+            self.label_24.setText(str(k1_1_koef))
+        else:
+            self.label_23.setText('')
+            self.label_24.setText('')
+        if k1_2:
+            k1_2_p = round(100*k1_2/all_out)
+            k1_2_koef = round(100/k1_2_p,2)
+            self.label_26.setText(f' {k1_2_p}% ({k1_2}) ')
+            self.label_27.setText(str(k1_2_koef))
+        else:
+            self.label_26.setText('')
+            self.label_27.setText('')
+        if k1_3:
+            k1_3_p = round(100*k1_3/all_out)
+            k1_3_koef = round(100/k1_3_p, 2)
+            self.label_29.setText(f' {k1_3_p}% ({k1_3}) ')
+            self.label_30.setText(str(k1_3_koef))
+        else:
+            self.label_29.setText('')
+            self.label_30.setText('')
+        if k1_4:
+            k1_4_p = round(100*k1_4/all_out)
+            k1_4_koef = round(100/k1_4_p, 2)
+            self.label_32.setText(f' {k1_4_p}% ({k1_4}) ')
+            self.label_33.setText(str(k1_4_koef))
+        else:
+            self.label_32.setText('')
+            self.label_33.setText('')
+        if k1_5:
+            k1_5_p = round(100*k1_5/all_out)
+            k1_5_koef = round(100/k1_5_p, 2)
+            self.label_65.setText(f' {k1_5_p}% ({k1_5}) ')
+            self.label_66.setText(str(k1_5_koef))
+        else:
+            self.label_65.setText('')
+            self.label_66.setText('')
+        if k2_1:
+            k2_1_p = round(100*k2_1/all_out)
+            k2_1_koef = round(100/k2_1_p,2)
+            self.label_86.setText(f' {k2_1_p}% ({k2_1}) ')
+            self.label_87.setText(str(k2_1_koef))
+        else:
+            self.label_86.setText('')
+            self.label_87.setText('')
+        if k2_2:
+            k2_2_p = round(100*k2_2/all_out)
+            k2_2_koef = round(100/k2_2_p, 2)
+            self.label_89.setText(f' {k2_2_p}% ({k2_2}) ')
+            self.label_90.setText(str(k2_2_koef))
+        else:
+            self.label_89.setText('')
+            self.label_90.setText('')
+        if k2_3:
+            k2_3_p = round(100*k2_3/all_out)
+            k2_3_koef = round(100/k2_3_p, 2)
+            self.label_92.setText(f' {k2_3_p}% ({k2_3}) ')
+            self.label_93.setText(str(k2_3_koef))
+        else:
+            self.label_92.setText('')
+            self.label_93.setText('')
+        if k2_4:
+            k2_4_p = round(100*k2_4/all_out)
+            k2_4_koef = round(100/k2_4_p, 2)
+            self.label_95.setText(f' {k2_4_p}% ({k2_4}) ')
+            self.label_96.setText(str(k2_4_koef))
+        else:
+            self.label_95.setText('')
+            self.label_96.setText('')
+        if k2_5:
+            k2_5_p = round(100*k2_5/all_out)
+            k2_5_koef = round(100/k2_5_p, 2)
+            self.label_98.setText(f' {k2_5_p}% ({k2_5}) ')
+            self.label_99.setText(str(k2_5_koef))
+        else:
+            self.label_98.setText('')
+            self.label_99.setText('')
+        if x:
+            x_p = round(100*x/all_out)
+            x_koef = round(100 / x_p, 2)
+            self.label_68.setText(f' {x_p}% ({x}) ')
+            self.label_69.setText(str(x_koef))
+        else:
+            self.label_68.setText('')
+            self.label_69.setText('')
+        if oz:
+            oz_p = round(100 * oz / all_out)
+            oz_koef = round(100 / oz_p, 2)
+            self.label_71.setText(f' {oz_p}% ({oz}) ')
+            self.label_72.setText(str(oz_koef))
+        else:
+            self.label_71.setText('')
+            self.label_72.setText('')
+        if tb1:
+            tb1_p = round(100 * tb1 / all_out)
+            tb1_koef = round(100 / tb1_p, 2)
+            self.label_74.setText(f' {tb1_p}% ({tb1}) ')
+            self.label_75.setText(str(tb1_koef))
+        else:
+            self.label_74.setText('')
+            self.label_75.setText('')
+        if tb2:
+            tb2_p = round(100 * tb2 / all_out)
+            tb2_koef = round(100 / tb2_p, 2)
+            self.label_77.setText(f' {tb2_p}% ({tb2}) ')
+            self.label_78.setText(str(tb2_koef))
+        else:
+            self.label_77.setText('')
+            self.label_78.setText('')
+        if tb3:
+            tb3_p = round(100 * tb3 / all_out)
+            tb3_koef = round(100 / tb3_p, 2)
+            self.label_80.setText(f' {tb3_p}% ({tb3}) ')
+            self.label_81.setText(str(tb3_koef))
+        else:
+            self.label_80.setText('')
+            self.label_81.setText('')
+        if tb4:
+            tb4_p = round(100 * tb4 / all_out)
+            tb4_koef = round(100 / tb4_p, 2)
+            self.label_83.setText(f' {tb4_p}% ({tb4}) ')
+            self.label_84.setText(str(tb4_koef))
+        else:
+            self.label_83.setText('')
+            self.label_84.setText('')
         self.label_13.setText('П1: ' + str(round(p1_out_percent)) + '% (' + str(round(p1_out)) + ')')
         self.label_14.setText('X: ' + str(round(x_out_percent)) + '% (' + str(round(x_out)) + ')')
         self.label_15.setText('П2: ' + str(round(p2_out_percent)) + '% (' + str(round(p2_out)) + ')')
@@ -282,7 +458,11 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                         command1, command2, champ, data[0], data[2], _time]
             data_out.append(data_el)
         self.update_table_games()
+        self.update_koef_info(data_out)
         save_data_in_file(data_out, href)
+
+    def update_koef_info(self, data):
+        print(data)
 
     def update_table_games(self):
         games_sort = [[key, item] for key, item in self.findedgames_for_url.items()]
@@ -613,7 +793,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
                 tb4 += 1
         if k1_1:
             k1_1_p = round(100*k1_1/len(games))
-            k1_1_koef = round(100/k1_1_p,1)
+            k1_1_koef = round(100/k1_1_p,2)
             self.label_6.setText(f' {k1_1_p}% ({k1_1}) ')
             self.label_4.setText(str(k1_1_koef))
         else:
@@ -621,7 +801,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_4.setText('')
         if k1_2:
             k1_2_p = round(100*k1_2/len(games))
-            k1_2_koef = round(100/k1_2_p,1)
+            k1_2_koef = round(100/k1_2_p,2)
             self.label_11.setText(f' {k1_2_p}% ({k1_2}) ')
             self.label_10.setText(str(k1_2_koef))
         else:
@@ -629,7 +809,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_10.setText('')
         if k1_3:
             k1_3_p = round(100*k1_3/len(games))
-            k1_3_koef = round(100/k1_3_p,1)
+            k1_3_koef = round(100/k1_3_p, 2)
             self.label_14.setText(f' {k1_3_p}% ({k1_3}) ')
             self.label_13.setText(str(k1_3_koef))
         else:
@@ -637,7 +817,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_13.setText('')
         if k1_4:
             k1_4_p = round(100*k1_4/len(games))
-            k1_4_koef = round(100/k1_4_p,1)
+            k1_4_koef = round(100/k1_4_p, 2)
             self.label_17.setText(f' {k1_4_p}% ({k1_4}) ')
             self.label_16.setText(str(k1_4_koef))
         else:
@@ -645,47 +825,47 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_16.setText('')
         if k1_5:
             k1_5_p = round(100*k1_5/len(games))
-            k1_5_koef = round(100/k1_5_p,1)
+            k1_5_koef = round(100/k1_5_p, 2)
             self.label_7.setText(f' {k1_5_p}% ({k1_5}) ')
             self.label_9.setText(str(k1_5_koef))
         else:
             self.label_7.setText('')
             self.label_9.setText('')
         if k2_1:
-            k2_1_p = round(100*k1_1/len(games))
-            k2_1_koef = round(100/k2_1_p,1)
+            k2_1_p = round(100*k2_1/len(games))
+            k2_1_koef = round(100/k2_1_p,2)
             self.label_44.setText(f' {k2_1_p}% ({k2_1}) ')
             self.label_45.setText(str(k2_1_koef))
         else:
             self.label_44.setText('')
             self.label_45.setText('')
         if k2_2:
-            k2_2_p = round(100*k1_1/len(games))
-            k2_2_koef = round(100/k2_2_p,1)
+            k2_2_p = round(100*k2_2/len(games))
+            k2_2_koef = round(100/k2_2_p,2)
             self.label_38.setText(f' {k2_2_p}% ({k2_2}) ')
             self.label_39.setText(str(k2_2_koef))
         else:
             self.label_38.setText('')
             self.label_39.setText('')
         if k2_3:
-            k2_3_p = round(100*k1_1/len(games))
-            k2_3_koef = round(100/k2_3_p,1)
+            k2_3_p = round(100*k2_3/len(games))
+            k2_3_koef = round(100/k2_3_p,2)
             self.label_35.setText(f' {k2_3_p}% ({k2_3}) ')
             self.label_36.setText(str(k2_3_koef))
         else:
             self.label_35.setText('')
             self.label_36.setText('')
         if k2_4:
-            k2_4_p = round(100*k1_1/len(games))
-            k2_4_koef = round(100/k2_4_p,1)
+            k2_4_p = round(100*k2_4/len(games))
+            k2_4_koef = round(100/k2_4_p,2)
             self.label_41.setText(f' {k2_4_p}% ({k2_4}) ')
             self.label_42.setText(str(k2_4_koef))
         else:
             self.label_41.setText('')
             self.label_42.setText('')
         if k2_5:
-            k2_5_p = round(100*k1_1/len(games))
-            k2_5_koef = round(100/k2_5_p,1)
+            k2_5_p = round(100*k2_5/len(games))
+            k2_5_koef = round(100/k2_5_p, 2)
             self.label_47.setText(f' {k2_5_p}% ({k2_5}) ')
             self.label_48.setText(str(k2_5_koef))
         else:
@@ -693,7 +873,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_48.setText('')
         if x:
             x_p = round(100*x/len(games))
-            x_koef = round(100 / x_p, 1)
+            x_koef = round(100 / x_p, 2)
             self.label_50.setText(f' {x_p}% ({x}) ')
             self.label_51.setText(str(x_koef))
         else:
@@ -701,7 +881,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_51.setText('')
         if oz:
             oz_p = round(100 * oz / len(games))
-            oz_koef = round(100 / oz_p, 1)
+            oz_koef = round(100 / oz_p, 2)
             self.label_53.setText(f' {oz_p}% ({oz}) ')
             self.label_54.setText(str(oz_koef))
         else:
@@ -709,7 +889,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_54.setText('')
         if tb1:
             tb1_p = round(100 * tb1 / len(games))
-            tb1_koef = round(100 / tb1_p, 1)
+            tb1_koef = round(100 / tb1_p, 2)
             self.label_56.setText(f' {tb1_p}% ({tb1}) ')
             self.label_57.setText(str(tb1_koef))
         else:
@@ -717,7 +897,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_57.setText('')
         if tb2:
             tb2_p = round(100 * tb2 / len(games))
-            tb2_koef = round(100 / tb2_p, 1)
+            tb2_koef = round(100 / tb2_p, 2)
             self.label_59.setText(f' {tb2_p}% ({tb2}) ')
             self.label_60.setText(str(tb2_koef))
         else:
@@ -725,7 +905,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_60.setText('')
         if tb3:
             tb3_p = round(100 * tb3 / len(games))
-            tb3_koef = round(100 / tb3_p, 1)
+            tb3_koef = round(100 / tb3_p, 2)
             self.label_20.setText(f' {tb3_p}% ({tb3}) ')
             self.label_19.setText(str(tb3_koef))
         else:
@@ -733,7 +913,7 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
             self.label_19.setText('')
         if tb4:
             tb4_p = round(100 * tb4 / len(games))
-            tb4_koef = round(100 / tb4_p, 1)
+            tb4_koef = round(100 / tb4_p, 2)
             self.label_62.setText(f' {tb4_p}% ({tb4}) ')
             self.label_63.setText(str(tb4_koef))
         else:

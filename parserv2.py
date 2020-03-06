@@ -53,19 +53,21 @@ class MultiParsing(QtWidgets.QDialog, multiparser.Ui_Dialog):
         print('[INFO] Подключение к базе успешно')
 
     def start_multi_parsing(self):
-        self.managepars = ManagerPars(int(self.comboBox.currentText()),self)
+        self.managepars = ManagerPars(int(self.comboBox.currentText()), self)
         self.managepars.start()
 
     def continue_multi_parsing(self):
-        pass
+        self.managepars = ManagerPars(int(self.comboBox.currentText()), self, _continue=True)
+        self.managepars.start()
 
 
 class ManagerPars(QThread):
-    def __init__(self, n_pars, window):
+    def __init__(self, n_pars, window, _continue=False):
         super().__init__()
         self.n_pars = n_pars
         self.window = window
         self.hrefs_pars = []
+        self._continue = _continue
         #self.parser_statuses = [False for i in range(0, 10)]
         self.soccer_url = 'https://www.oddsportal.com/results/#soccer'
         self.headers = {
@@ -154,7 +156,15 @@ class ManagerPars(QThread):
         href_championships = [championship.select('a')[0]['href'] for championship in championships
                               if len(championship.select('a')) > 0]
         href_championships_soccer = [href for href in href_championships if href.split('/')[1] == 'soccer']
-        print(href_championships_soccer)
+        if self._continue:
+            with open("hrefs_file.json", "r") as hrefs_file:
+                hrefs = json.load(hrefs_file)
+            for href in hrefs:
+                if href in href_championships:
+                    href_championships.remove(href)
+        else:
+            with open("hrefs_file.json", "w") as hrefs_file:
+                json.dump([], hrefs_file)
         self.start_time = time.time()
         for href in href_championships_soccer:
             if href not in self.hrefs_pars:
@@ -259,6 +269,7 @@ class ParserThread(QThread):
             print('[INFO] Чемпионат ' + string_champ)
             if self.check_champ_in_db(self.main_page + first_page):
                 print('[INFO] Чемпионат полностью в базе')
+                self.update_full_list(self.href)
                 self.status = False
                 return
             print('[INFO] Чемпионат не полностью в базе')
@@ -299,7 +310,17 @@ class ParserThread(QThread):
                         self.get_champ_data_in_year(year_page_add, p)
                         p -= 1
                     self.get_champ_data_in_year(year_page)
+        self.update_full_list(self.href)
         self.status = False
+
+    def update_full_list(self, href):
+        with open("hrefs_file.json", "r") as hrefs_file:
+            hrefs = json.load(hrefs_file)
+        if href not in hrefs:
+            hrefs.append(href)
+            with open("hrefs_file.json", "w") as hrefs_file:
+                json.dump(hrefs, hrefs_file)
+
 
     def check_champ_in_db(self, champ_url):
         """

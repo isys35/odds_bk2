@@ -31,6 +31,7 @@ class MultiParsing(QtWidgets.QDialog, multiparser.Ui_Dialog):
         self.pushButton.clicked.connect(self.update_counter_game)
         self.comboBox.addItems([str(i) for i in range(1, 11)])
         self.pushButton_2.clicked.connect(self.start_multi_parsing)
+        self.pushButton_3.clicked.connect(self.continue_multi_parsing)
 
     def update_counter_game(self):
         print('[INFO] Подключение к базе')

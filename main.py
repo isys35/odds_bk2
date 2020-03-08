@@ -324,133 +324,136 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             p1_out_percent = round(100 * p1_out / all_out, 1)
             p2_out_percent = round(100 * p2_out / all_out, 1)
             x_out_percent = round(100 * x_out / all_out, 1)
+        if p1_out_percent:
             p1_out_k = round(100 / p1_out_percent, 2)
+        if p2_out_percent:
             p2_out_k = round(100 / p2_out_percent, 2)
+        if x_out_percent:
             x_out_k = round(100 / x_out_percent, 2)
-        if k1_1:
-            k1_1_p = round(100*k1_1/all_out, 1)
+        if k1_1 and all_out:
+            k1_1_p = 100*k1_1/all_out
             k1_1_koef = round(100/k1_1_p, 2)
-            self.label_23.setText(f' {k1_1_p}% ({k1_1}) ')
+            self.label_23.setText(f' {round(k1_1_p,1)}% ({k1_1}) ')
             self.label_24.setText(str(k1_1_koef))
         else:
             self.label_23.setText('')
             self.label_24.setText('')
-        if k1_2:
-            k1_2_p = round(100*k1_2/all_out, 1)
+        if k1_2 and all_out:
+            k1_2_p = 100*k1_2/all_out
             k1_2_koef = round(100/k1_2_p, 2)
-            self.label_26.setText(f' {k1_2_p}% ({k1_2}) ')
+            self.label_26.setText(f' {round(k1_2_p,1)}% ({k1_2}) ')
             self.label_27.setText(str(k1_2_koef))
         else:
             self.label_26.setText('')
             self.label_27.setText('')
-        if k1_3:
-            k1_3_p = round(100*k1_3/all_out, 1)
+        if k1_3 and all_out:
+            k1_3_p = 100*k1_3/all_out
             k1_3_koef = round(100/k1_3_p, 2)
-            self.label_29.setText(f' {k1_3_p}% ({k1_3}) ')
+            self.label_29.setText(f' {round(k1_3_p,1)}% ({k1_3}) ')
             self.label_30.setText(str(k1_3_koef))
         else:
             self.label_29.setText('')
             self.label_30.setText('')
-        if k1_4:
-            k1_4_p = round(100*k1_4/all_out, 1)
+        if k1_4 and all_out:
+            k1_4_p = 100*k1_4/all_out
             k1_4_koef = round(100/k1_4_p, 2)
-            self.label_32.setText(f' {k1_4_p}% ({k1_4}) ')
+            self.label_32.setText(f' {round(k1_4_p,1)}% ({k1_4}) ')
             self.label_33.setText(str(k1_4_koef))
         else:
             self.label_32.setText('')
             self.label_33.setText('')
-        if k1_5:
-            k1_5_p = round(100*k1_5/all_out, 1)
+        if k1_5 and all_out:
+            k1_5_p = 100*k1_5/all_out
             k1_5_koef = round(100/k1_5_p, 2)
-            self.label_65.setText(f' {k1_5_p}% ({k1_5}) ')
+            self.label_65.setText(f' {round(k1_5_p,1)}% ({k1_5}) ')
             self.label_66.setText(str(k1_5_koef))
         else:
             self.label_65.setText('')
             self.label_66.setText('')
-        if k2_1:
-            k2_1_p = round(100*k2_1/all_out, 1)
+        if k2_1 and all_out:
+            k2_1_p = 100*k2_1/all_out
             k2_1_koef = round(100/k2_1_p, 2)
-            self.label_86.setText(f' {k2_1_p}% ({k2_1}) ')
+            self.label_86.setText(f' {round(k2_1_p,1)}% ({k2_1}) ')
             self.label_87.setText(str(k2_1_koef))
         else:
             self.label_86.setText('')
             self.label_87.setText('')
-        if k2_2:
-            k2_2_p = round(100*k2_2/all_out, 1)
+        if k2_2 and all_out:
+            k2_2_p = 100*k2_2/all_out
             k2_2_koef = round(100/k2_2_p, 2)
-            self.label_89.setText(f' {k2_2_p}% ({k2_2}) ')
+            self.label_89.setText(f' {round(k2_2_p,1)}% ({k2_2}) ')
             self.label_90.setText(str(k2_2_koef))
         else:
             self.label_89.setText('')
             self.label_90.setText('')
-        if k2_3:
-            k2_3_p = round(100*k2_3/all_out, 1)
+        if k2_3 and all_out:
+            k2_3_p = 100*k2_3/all_out
             k2_3_koef = round(100/k2_3_p, 2)
-            self.label_92.setText(f' {k2_3_p}% ({k2_3}) ')
+            self.label_92.setText(f' {round(k2_3_p,1)}% ({k2_3}) ')
             self.label_93.setText(str(k2_3_koef))
         else:
             self.label_92.setText('')
             self.label_93.setText('')
-        if k2_4:
-            k2_4_p = round(100*k2_4/all_out, 1)
+        if k2_4 and all_out:
+            k2_4_p = 100*k2_4/all_out
             k2_4_koef = round(100/k2_4_p, 2)
-            self.label_95.setText(f' {k2_4_p}% ({k2_4}) ')
+            self.label_95.setText(f' {round(k2_4_p,1)}% ({k2_4}) ')
             self.label_96.setText(str(k2_4_koef))
         else:
             self.label_95.setText('')
             self.label_96.setText('')
-        if k2_5:
-            k2_5_p = round(100*k2_5/all_out, 1)
+        if k2_5 and all_out:
+            k2_5_p = 100*k2_5/all_out
             k2_5_koef = round(100/k2_5_p, 2)
-            self.label_98.setText(f' {k2_5_p}% ({k2_5}) ')
+            self.label_98.setText(f' {round(k2_5_p,1)}% ({k2_5}) ')
             self.label_99.setText(str(k2_5_koef))
         else:
             self.label_98.setText('')
             self.label_99.setText('')
-        if x:
-            x_p = round(100*x/all_out, 1)
+        if x and all_out:
+            x_p = 100*x/all_out
             x_koef = round(100 / x_p, 2)
-            self.label_68.setText(f' {x_p}% ({x}) ')
+            self.label_68.setText(f' {round(x_p,1)}% ({x}) ')
             self.label_69.setText(str(x_koef))
         else:
             self.label_68.setText('')
             self.label_69.setText('')
-        if oz:
-            oz_p = round(100 * oz / all_out, 1)
+        if oz and all_out:
+            oz_p = 100 * oz / all_out
             oz_koef = round(100 / oz_p, 2)
-            self.label_71.setText(f' {oz_p}% ({oz}) ')
+            self.label_71.setText(f' {round(oz_p,1)}% ({oz}) ')
             self.label_72.setText(str(oz_koef))
         else:
             self.label_71.setText('')
             self.label_72.setText('')
-        if tb1:
-            tb1_p = round(100 * tb1 / all_out, 1)
+        if tb1 and all_out:
+            tb1_p = 100 * tb1 / all_out
             tb1_koef = round(100 / tb1_p, 2)
-            self.label_74.setText(f' {tb1_p}% ({tb1}) ')
+            self.label_74.setText(f' {round(tb1_p,1)}% ({tb1}) ')
             self.label_75.setText(str(tb1_koef))
         else:
             self.label_74.setText('')
             self.label_75.setText('')
-        if tb2:
-            tb2_p = round(100 * tb2 / all_out, 1)
+        if tb2 and all_out:
+            tb2_p = 100 * tb2 / all_out
             tb2_koef = round(100 / tb2_p, 2)
-            self.label_77.setText(f' {tb2_p}% ({tb2}) ')
+            self.label_77.setText(f' {round(tb2_p,1)}% ({tb2}) ')
             self.label_78.setText(str(tb2_koef))
         else:
             self.label_77.setText('')
             self.label_78.setText('')
-        if tb3:
-            tb3_p = round(100 * tb3 / all_out, 1)
+        if tb3 and all_out:
+            tb3_p = 100 * tb3 / all_out
             tb3_koef = round(100 / tb3_p, 2)
-            self.label_80.setText(f' {tb3_p}% ({tb3}) ')
+            self.label_80.setText(f' {round(tb3_p,1)}% ({tb3}) ')
             self.label_81.setText(str(tb3_koef))
         else:
             self.label_80.setText('')
             self.label_81.setText('')
-        if tb4:
-            tb4_p = round(100 * tb4 / all_out, 1)
+        if tb4 and all_out:
+            tb4_p = 100 * tb4 / all_out
             tb4_koef = round(100 / tb4_p, 2)
-            self.label_83.setText(f' {tb4_p}% ({tb4}) ')
+            self.label_83.setText(f' {round(tb4_p,1)}% ({tb4}) ')
             self.label_84.setText(str(tb4_koef))
         else:
             self.label_83.setText('')

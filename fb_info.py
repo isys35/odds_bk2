@@ -73,15 +73,15 @@ def get_key():
     #     else:
     #         print('...........')
     #     count_key -= 1
-    checkers = [KeyChecker() for i in range(0, 100)]
+    checkers = [KeyChecker() for i in range(0, 10)]
     for checker in checkers:
         checker.start()
     while True:
         for checker in checkers:
             if not checker.response_key:
                 checker.response_key = list_key.pop(0)
-                if checker.out_request:
-                    return checker.out_request
+            if checker.out_request:
+                return checker.out_request
             print(len(list_key))
 
 if __name__ == '__main__':

@@ -47,8 +47,7 @@ def brenchmark(func):
     return wrapper
 
 
-def save_data_in_file(data, url):
-    print(data)
+def save_data_in_file(data):
     file_path = 'game_info/'
     file_name = file_path + 'info.xls'
     wb = xlwt.Workbook()
@@ -59,13 +58,13 @@ def save_data_in_file(data, url):
     style_centr_aligment.alignment = aligment
     #ws.col(2).width = 6000
     ws.col(0).width = 4000
-    ws.col(4).width = 6000
+    ws.col(10).width = 6000
     #ws.col(6).width = 6000
     ws.write(0, 0, str(data[0][5]))
     ws.write(0, 1, str(data[0][6]))
-    ws.write(0, 4, str(data[0][7]))
-    ws.write(0, 2, str(data[0][8]))
-    ws.write(0, 3, str(data[0][9]))
+    ws.write(0, 3, str(data[0][7]))
+    ws.write(0, 4, str(data[0][8]))
+    ws.write(0, 2, str(data[0][9]))
     ws.write(1, 0, str(data[0][11]))
     ws.write(1, 1, str(data[0][12]))
     ws.write(2, 0, str(data[0][10]))
@@ -73,8 +72,8 @@ def save_data_in_file(data, url):
     ws.write(4, 1, 'П1', style_centr_aligment)
     ws.write(4, 2, 'X', style_centr_aligment)
     ws.write(4, 3, 'П2', style_centr_aligment)
-    ws.write(4, 4, 'Время', style_centr_aligment)
-    ws.write(4, 5, 'Маржа', style_centr_aligment)
+    ws.write(4, 10, 'Время', style_centr_aligment)
+    ws.write(4, 11, 'Маржа', style_centr_aligment)
     target_row = 5
     list_for_excel = []
     for bookmaker in data:
@@ -87,21 +86,19 @@ def save_data_in_file(data, url):
     for el in list_for_excel:
         ws.write(target_row, 0, el[0])
         ws.write(target_row, 1, el[1], style_centr_aligment)
-        ws.write(target_row, 4, str(time.ctime(el[4])).split(' ', 1)[1])
+        ws.write(target_row, 10, str(time.ctime(el[4])).split(' ', 1)[1])
         ws.write(target_row, 2, el[2], style_centr_aligment)
         ws.write(target_row, 3, el[3], style_centr_aligment)
         major = ((1 / el[1] * 100)
                     + (1 / el[2] * 100)
                     + (1 / el[3] * 100)) - 100
-        ws.write(target_row, 5, round(major, 2), style_centr_aligment)
-        target_row += 1
+        ws.write(target_row, 11, round(major, 2), style_centr_aligment)
         p1_real = el[1] * (1+major/100)
         x_real = el[2] * (1 + major / 100)
         p2_real = el[3] * (1 + major / 100)
-        ws.write(target_row, 1, round(p1_real, 2), style_centr_aligment)
-        ws.write(target_row, 2, round(x_real, 2), style_centr_aligment)
-        ws.write(target_row, 3, round(p2_real, 2), style_centr_aligment)
-        target_row += 1
+        ws.write(target_row, 4, round(p1_real, 2), style_centr_aligment)
+        ws.write(target_row, 5, round(x_real, 2), style_centr_aligment)
+        ws.write(target_row, 6, round(p2_real, 2), style_centr_aligment)
         p1delta = p1_real-el[1]
         if p1_real > el[1]:
             p1delta = '+' + str(round(p1delta, 2))
@@ -117,14 +114,27 @@ def save_data_in_file(data, url):
             p2delta = '+' + str(round(p2delta, 2))
         else:
             p2delta = '-' + str(round(p2delta, 2))
-        ws.write(target_row, 1, p1delta, style_centr_aligment)
-        ws.write(target_row, 2, xdelta, style_centr_aligment)
-        ws.write(target_row, 3, p2delta, style_centr_aligment)
+        ws.write(target_row, 7, p1delta, style_centr_aligment)
+        ws.write(target_row, 8, xdelta, style_centr_aligment)
+        ws.write(target_row, 9, p2delta, style_centr_aligment)
         target_row += 1
     wb.save(file_name)
     full_path = 'D:/Project/odds_bk2/'
     with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
         doc.poll()
+
+
+def printok():
+    print('ok')
+
+
+class SaveFile(QThread):
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+    def run(self):
+        save_data_in_file(self.data)
 
 
 def get_point_result(result):
@@ -468,7 +478,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             data_out.append(data_el)
         self.update_table_games()
         self.update_koef_info(data_out)
-        save_data_in_file(data_out, href)
+        self.savedata = SaveFile(data_out)
+        self.savedata.start()
 
     def update_koef_info(self, data):
         print(data)
@@ -945,7 +956,8 @@ class Dialog(QtWidgets.QDialog, dialog.Ui_Dialog):
         if column == 10:
             url = self.tableWidget.item(row, 8).text()
             data = self.get_data(url)
-            save_data_in_file(data, url)
+            self.savedata = SaveFile(data)
+            self.savedata.start()
 
     def get_data(self, url):
         print(url)

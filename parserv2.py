@@ -162,7 +162,7 @@ class ManagerPars(QThread):
                 hrefs = json.load(hrefs_file)
             for href in hrefs:
                 if href in href_championships:
-                    href_championships.remove(href)
+                    href_championships_soccer.remove(href)
         else:
             with open("hrefs_file.json", "w") as hrefs_file:
                 json.dump([], hrefs_file)

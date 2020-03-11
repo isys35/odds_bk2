@@ -38,7 +38,7 @@ class Parser:
         while urls:
             if len(urls) > self.async_count:
                 interact_list = []
-                for i in range(10):
+                for i in range(self.async_count):
                     interact_list.append(urls.pop(0))
                 prepared_urls.append(interact_list)
             else:
@@ -54,16 +54,31 @@ class Parser:
             headers.append(header)
         return headers
 
-    def get_years_response(self, urls):
+    def get_years_responses(self, urls):
         headers = self.get_headers(urls)
         responses = async_request.input_reuqests(urls, headers)
-        print(len(responses))
+        return responses
+
+    def get_years_urls(self, response):
+        soup = BS(response, 'lxml')
+        main_menu = soup.select_one('.main-menu2.main-menu-gray')
+        try:
+            years_href = [a['href'] for a in main_menu.select('a')]
+        except AttributeError:
+            print('page not found')
+            return
+        years_urls = self.href_to_url(years_href)
+        print(years_urls)
+        return years_urls
+
 
 
 if __name__ == '__main__':
-    async_count = 10
     parser = Parser()
     urls = parser.get_hrefs_champs_soccer()
     prepared_urls = parser.prepare_url(urls)
+    print(len(prepared_urls))
     for urls in prepared_urls:
-        parser.get_years_response(urls)
+        responses = parser.get_years_responses(urls)
+        for response in responses:
+            years_urls = parser.get_years_urls(response)

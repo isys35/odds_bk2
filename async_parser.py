@@ -77,6 +77,14 @@ class Parser:
         print(years_urls)
         return years_urls
 
+    def get_year_response_for_page(self, id, url_ref, p):
+        urls = [f'https://fb.oddsportal.com/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{pi+1}/?_=' \
+                    f'{int(time.time() * 1000)}' for pi in range(p)]
+        urls_ref = [url_ref for _ in range(p)]
+        headers = self.get_headers(urls_ref)
+        responses = async_request.input_reuqests(urls, headers)
+        return responses
+
     def get_ajax_year_id(self, response):
         soup = BS(response, 'html.parser')
         try:
@@ -111,6 +119,18 @@ class Parser:
             page = int(pagination.select('a')[-1]['x-page'])
             return page
 
+    def get_games(self, response, id, p):
+        resp_json_text = \
+            response.replace(f"globals.jsonpCallback('/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{p}/', ",
+                              '').rsplit(
+                ');', maxsplit=1)[0]
+        json_resp = json.loads(resp_json_text)
+        soup = BS(str(json_resp['d']['html']), 'lxml')
+        names = soup.select('.name.table-participant')
+        hrefs = [name.select_one('a')['href'] for name in names]
+        games_urls = self.href_to_url(hrefs)
+        return games_urls
+
 
 if __name__ == '__main__':
     parser = Parser()
@@ -130,6 +150,13 @@ if __name__ == '__main__':
             # тут можно ускорить
             for response_page in responses_pages:
                 pages = parser.get_pages(response_page,years_ids[responses_pages.index(response_page)])
-                print(pages)
+                responses_matchs = parser.get_year_response_for_page(years_ids[responses_pages.index(response_page)],
+                                                                     years_urls[responses_pages.index(response_page)],
+                                                                     pages)
+                for response_match in responses_matchs:
+                    games_url = parser.get_games(response_match,
+                                                 years_ids[responses_pages.index(response_page)],
+                                                 responses_matchs.index(response_match)+1)
+                    print(games_url)
 
 

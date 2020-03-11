@@ -13,6 +13,7 @@ class Parser:
         self.db = 'soccer.db'
         self.soccer_url = 'https://www.oddsportal.com/results/#soccer'
         self.main_url = 'https://www.oddsportal.com'
+        self.async_count = 10
 
     def get_hrefs_champs_soccer(self):
         headers = {
@@ -32,10 +33,25 @@ class Parser:
         urls = [self.main_url + href for href in hrefs]
         return urls
 
+    def prepare_url(self, urls):
+        prepared_urls = []
+        while urls:
+            if len(urls) > self.async_count:
+                interact_list = []
+                for i in range(10):
+                    interact_list.append(urls.pop(0))
+                prepared_urls.append(interact_list)
+            else:
+                prepared_urls.append(urls)
+                urls = []
+        return prepared_urls
+
 
 
 
 if __name__ == '__main__':
+    async_count = 10
     parser = Parser()
-    hrefs = parser.get_hrefs_champs_soccer()
-    print(hrefs)
+    urls = parser.get_hrefs_champs_soccer()
+    prepared_urls = parser.prepare_url(urls)
+    print(prepared_urls)

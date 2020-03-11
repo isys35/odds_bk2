@@ -71,6 +71,25 @@ class Parser:
         print(years_urls)
         return years_urls
 
+    def get_ajax_year_id(self, response):
+        soup = BS(response, 'html.parser')
+        try:
+            script = soup.select_one('script:contains("new OpHandler")').text
+        except AttributeError:
+            print('Page not found')
+            return
+        json_text = re.search('PageTournament\((.*?)\);', script)
+        if not json_text:
+            print('script not found')
+            sys.exit()
+        try:
+            json_data = json.loads(json_text.group(1))
+        except ValueError:
+            print('json not parsed')
+            sys.exit()
+        id = json_data.get('id')
+        return id
+
 
 
 if __name__ == '__main__':
@@ -83,4 +102,8 @@ if __name__ == '__main__':
         for response in responses_champ:
             years_urls = parser.get_years_urls(response)
             responses_years = parser.get_responses(years_urls)
-            print(len(responses_years))
+            years_ids = []
+            for response_year in responses_years:
+                year_id = parser.get_ajax_year_id(response_year)
+                years_ids.append(year_id)
+            print(years_ids)

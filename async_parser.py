@@ -59,6 +59,12 @@ class Parser:
         responses = async_request.input_reuqests(urls, headers)
         return responses
 
+    def get_year_response(self, ids, urls_ref, p):
+        urls = [f'https://fb.oddsportal.com/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{p}/?_={int(time.time() * 1000)}' for id in ids]
+        headers = self.get_headers(urls_ref)
+        responses = async_request.input_reuqests(urls, headers)
+        return responses
+
     def get_years_urls(self, response):
         soup = BS(response, 'lxml')
         main_menu = soup.select_one('.main-menu2.main-menu-gray')
@@ -90,6 +96,20 @@ class Parser:
         id = json_data.get('id')
         return id
 
+    def get_pages(self, response, id):
+        resp_json_text = \
+        response.replace(f"globals.jsonpCallback('/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/1/', ",
+                          '').rsplit(');', maxsplit=1)[0]
+        json_resp = json.loads(resp_json_text)
+        soup = BS(str(json_resp['d']['html']), 'lxml')
+        # with open('page.html', 'w', encoding='utf8') as html_file:
+        #     html_file.write(str(soup))
+        pagination = soup.select_one('#pagination')
+        if not pagination:
+            return 1
+        else:
+            page = int(pagination.select('a')[-1]['x-page'])
+            return page
 
 
 if __name__ == '__main__':
@@ -106,4 +126,10 @@ if __name__ == '__main__':
             for response_year in responses_years:
                 year_id = parser.get_ajax_year_id(response_year)
                 years_ids.append(year_id)
-            print(years_ids)
+            responses_pages = parser.get_year_response(years_ids, years_urls, 1)
+            # тут можно ускорить
+            for response_page in responses_pages:
+                pages = parser.get_pages(response_page,years_ids[responses_pages.index(response_page)])
+                print(pages)
+
+

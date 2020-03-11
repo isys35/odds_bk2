@@ -54,7 +54,7 @@ class Parser:
             headers.append(header)
         return headers
 
-    def get_years_responses(self, urls):
+    def get_responses(self, urls):
         headers = self.get_headers(urls)
         responses = async_request.input_reuqests(urls, headers)
         return responses
@@ -79,6 +79,8 @@ if __name__ == '__main__':
     prepared_urls = parser.prepare_url(urls)
     print(len(prepared_urls))
     for urls in prepared_urls:
-        responses = parser.get_years_responses(urls)
-        for response in responses:
+        responses_champ = parser.get_responses(urls)
+        for response in responses_champ:
             years_urls = parser.get_years_urls(response)
+            responses_years = parser.get_responses(years_urls)
+            print(len(responses_years))

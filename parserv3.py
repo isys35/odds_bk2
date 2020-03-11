@@ -7,7 +7,6 @@ from urllib.parse import unquote
 import time
 
 
-
 def get_hrefs_champs_soccer():
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
@@ -84,9 +83,6 @@ def get_year_pages(id, href):
     else:
         page = int(pagination.select('a')[-1]['x-page'])
         return page
-
-
-
 
 def get_years_champ(url):
     headers = {

@@ -17,6 +17,7 @@ class Parser:
         self.main_header = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
+        self.out_match_data = {}
 
     def get_hrefs_champs_soccer(self):
         r = requests.get(self.soccer_url, headers=self.main_header)
@@ -79,6 +80,11 @@ class Parser:
         responses = async_request.input_reuqests(urls, headers)
         return responses
 
+    def get_response_odds(self, urls, urls_ref):
+        headers = self.get_headers(urls_ref)
+        urls = [url + (str(int(time.time()*1000))) for url in urls]
+        responses = async_request.input_reuqests(urls, headers)
+        return responses
 
     def get_years_urls(self, response):
         soup = BS(response, 'lxml')
@@ -134,9 +140,23 @@ class Parser:
         json_resp = json.loads(resp_json_text)
         soup = BS(str(json_resp['d']['html']), 'lxml')
         names = soup.select('.name.table-participant')
+        command1_list = [c1.text.split(' - ')[0] for c1 in names]
+        command2_list = [c2.text.split(' - ')[1] for c2 in names]
+        timematch_list =[t['class'][-1].split('-')[0].replace('t','') for t in soup.select('.table-time')]
+        timematch_list, date_list = self.reformat_timelist(timematch_list)
         hrefs = [name.select_one('a')['href'] for name in names]
         games_urls = self.href_to_url(hrefs)
-        return games_urls
+        return games_urls, timematch_list, command1_list, command2_list, timematch_list, date_list
+
+    def reformat_timelist(self, timelist):
+        timematch_list = []
+        date_list = []
+        for t in timelist:
+            timematch = time.strftime("%H:%M", time.localtime(float(t)))
+            timematch_list.append(timematch)
+            date = time.strftime("%d %b %Y", time.localtime(float(t)))
+            date_list.append(date)
+        return timematch_list,date_list
 
     def get_request_url_odds(self, response):
         soup = BS(response, 'html.parser')
@@ -155,41 +175,64 @@ class Parser:
         url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
         return url_out
 
+    def update_first_data(self, response):
+        soup_champ = BS(response, 'lxml')
+        string_sport = soup_champ.select('#breadcrumb')[0].select('a')[1].text
+        self.out_match_data['sport'] = string_sport
+        country = soup_champ.select('#breadcrumb')[0].select('a')[2].text
+        self.out_match_data['country'] = country
+        string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
+        self.out_match_data['champ'] = string_champ
+        print('[INFO] Страна ' + country)
+        print('[INFO] Чемпионат ' + string_champ)
+
+    def start(self):
+        urls = parser.get_hrefs_champs_soccer()
+        self.parsing(urls)
+
+    def parsing(self, urls):
+        prepared_urls = self.prepare_url(urls)
+        print(len(prepared_urls))
+        for urls in prepared_urls:
+            responses_champ = self.get_responses(urls)
+            self.out_match_data = {}
+            for response in responses_champ:
+                self.update_first_data(response)
+                print(self.out_match_data)
+                years_urls = self.get_years_urls(response)
+                responses_years = self.get_responses(years_urls)
+                years_ids = []
+                for response_year in responses_years:
+                    year_id = self.get_ajax_year_id(response_year)
+                    years_ids.append(year_id)
+                responses_pages = self.get_year_response(years_ids, years_urls, 1)
+                # тут можно ускорить
+                for response_page in responses_pages:
+                    pages = self.get_pages(response_page, years_ids[responses_pages.index(response_page)])
+                    responses_matchs = self.get_year_response_for_page(
+                        years_ids[responses_pages.index(response_page)],
+                        years_urls[responses_pages.index(response_page)],
+                        pages)
+                    for response_match in responses_matchs:
+                        games_url, timematch_list, command1_list, command2_list, timematch_list, date_list = self.get_games(
+                            response_match,
+                            years_ids[responses_pages.index(response_page)],
+                            responses_matchs.index(response_match) + 1)
+                        print(len(games_url))
+                        responses_for_odds_request = self.get_response_for_odds_request(games_url,
+                                                                                          years_urls[
+                                                                                              responses_pages.index(
+                                                                                                  response_page)])
+                        odds_requests_url = []
+                        for response_for_odds_request in responses_for_odds_request:
+                            request_url = self.get_request_url_odds(response_for_odds_request)
+                            odds_requests_url.append(request_url)
+                        responses_odds = self.get_response_odds(odds_requests_url, games_url)
+                        print(len(responses_odds))
 
 if __name__ == '__main__':
     parser = Parser()
-    urls = parser.get_hrefs_champs_soccer()
-    prepared_urls = parser.prepare_url(urls)
-    print(len(prepared_urls))
-    for urls in prepared_urls:
-        responses_champ = parser.get_responses(urls)
-        for response in responses_champ:
-            years_urls = parser.get_years_urls(response)
-            responses_years = parser.get_responses(years_urls)
-            years_ids = []
-            for response_year in responses_years:
-                year_id = parser.get_ajax_year_id(response_year)
-                years_ids.append(year_id)
-            responses_pages = parser.get_year_response(years_ids, years_urls, 1)
-            # тут можно ускорить
-            for response_page in responses_pages:
-                pages = parser.get_pages(response_page,years_ids[responses_pages.index(response_page)])
-                responses_matchs = parser.get_year_response_for_page(years_ids[responses_pages.index(response_page)],
-                                                                     years_urls[responses_pages.index(response_page)],
-                                                                     pages)
-                for response_match in responses_matchs:
-                    games_url = parser.get_games(response_match,
-                                                 years_ids[responses_pages.index(response_page)],
-                                                 responses_matchs.index(response_match)+1)
-                    print(len(games_url))
-                    responses_for_odds_request = parser.get_response_for_odds_request(games_url,
-                                                                    years_urls[responses_pages.index(response_page)])
-                    odds_requests_url = []
-                    for response_for_odds_request in responses_for_odds_request:
-                        request_url = parser.get_request_url_odds(response_for_odds_request)
-                        odds_requests_url.append(request_url)
-                    print(odds_requests_url)
-                    print(len(responses_for_odds_request))
+    parser.start()
 
 
 

@@ -6,6 +6,8 @@ import sys
 import json
 from urllib.parse import unquote
 import time
+from aiohttp.client_exceptions import ClientConnectorError
+from requests.exceptions import ConnectionError
 
 
 class Parser:
@@ -18,6 +20,14 @@ class Parser:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:71.0) Gecko/20100101 Firefox/71.0'
         }
         self.out_match_data = {}
+        self.bookmakersData = self.get_bookmakersdata()
+        self.start_time = time.time()
+        self.count_match = 0
+
+    @staticmethod
+    def get_bookmakersdata():
+        with open("bookmakersData.json", "r") as read_file:
+            return json.load(read_file)
 
     def get_hrefs_champs_soccer(self):
         r = requests.get(self.soccer_url, headers=self.main_header)
@@ -95,7 +105,6 @@ class Parser:
             print('page not found')
             return
         years_urls = self.href_to_url(years_href)
-        print(years_urls)
         return years_urls
 
     def get_ajax_year_id(self, response):
@@ -160,6 +169,11 @@ class Parser:
 
     def get_request_url_odds(self, response):
         soup = BS(response, 'html.parser')
+        col_content = soup.select('#col-content')
+        try:
+            result = col_content[0].select('p.result')[0].text
+        except IndexError:
+            result = 'Canceled'
         script = soup.select_one('script:contains("new OpHandler")').text
         json_text = re.search('PageEvent\((.*?)\);', script)
         if not json_text:
@@ -173,7 +187,7 @@ class Parser:
         id1 = json_data.get('id')
         id2 = unquote(json_data.get('xhash'))
         url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
-        return url_out
+        return url_out, result
 
     def update_first_data(self, response):
         soup_champ = BS(response, 'lxml')
@@ -183,22 +197,102 @@ class Parser:
         self.out_match_data['country'] = country
         string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
         self.out_match_data['champ'] = string_champ
-        print('[INFO] Страна ' + country)
-        print('[INFO] Чемпионат ' + string_champ)
+
+
+    def clear_response_odds(self, odds_response):
+        print(odds_response)
+        """
+        Очистка ответа от API от ненужных данных
+        :param full:
+        :param odds_response:
+        :return:
+        """
+        null = None
+        true = True
+        false = False
+        left_cut1 = odds_response.split('globals.jsonpCallback', 1)
+        right_cut1 = left_cut1[-1].rsplit(';', 1)
+        full_data = [el for el in eval(right_cut1[0])]
+        print(full_data[1]['d'])
+        dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
+        dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
+        dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
+        dict_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['change_time']
+        outcome_id = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['OutcomeID']
+        out_dict_odds = {}
+        for bk_id, odds in dict_openodds.items():
+            if type(odds) is list:
+                for i in range(0, len(odds)):
+                    if not odds[i]:
+                        dict_openodds[bk_id][i] = dict_odds[bk_id][i]
+
+            else:
+                for pos, item in odds.items():
+                    if not item:
+                        dict_openodds[bk_id][pos] = dict_odds[bk_id][pos]
+        for bk_id, odd in dict_openodds.items():
+            if type(odd) is list:
+                odds = odd
+                if bk_id in self.bookmakersData:
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+            else:
+                odds = [None, None, None]
+                if bk_id in self.bookmakersData:
+                    for pos, item in odd.items():
+                        if pos == '0':
+                            odds[0] = item
+                        elif pos == '1':
+                            odds[1] = item
+                        elif pos == '2':
+                            odds[2] = item
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']] = odds
+        for bk_id, change_time in dict_opening_change_time.items():
+            if type(change_time) is list:
+                openning_change_times = change_time
+                if bk_id in self.bookmakersData:
+                    if openning_change_times[0]:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
+                    else:
+                        out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(dict_change_time[bk_id][0])
+            else:
+                openning_change_times = [None, None, None]
+                if bk_id in self.bookmakersData:
+                    for pos, item in change_time.items():
+                        if pos == '0':
+                            if item:
+                                openning_change_times[0] = item
+                            else:
+                                openning_change_times[0] = dict_change_time[bk_id]['0']
+                        elif pos == '1':
+                            if item:
+                                openning_change_times[1] = item
+                            else:
+                                openning_change_times[1] = dict_change_time[bk_id]['1']
+                        elif pos == '2':
+                            if item:
+                                openning_change_times[2] = item
+                            else:
+                                openning_change_times[2] = dict_change_time[bk_id]['2']
+                    if not openning_change_times[0]:
+                        print('проверка времени', change_time)
+                    out_dict_odds[self.bookmakersData[bk_id]['WebName']].append(openning_change_times[0])
+        return out_dict_odds
 
     def start(self):
         urls = parser.get_hrefs_champs_soccer()
+        self.start_time = time.time()
+        self.count_match = 0
         self.parsing(urls)
 
     def parsing(self, urls):
         prepared_urls = self.prepare_url(urls)
-        print(len(prepared_urls))
+
         for urls in prepared_urls:
             responses_champ = self.get_responses(urls)
             self.out_match_data = {}
             for response in responses_champ:
                 self.update_first_data(response)
-                print(self.out_match_data)
+
                 years_urls = self.get_years_urls(response)
                 responses_years = self.get_responses(years_urls)
                 years_ids = []
@@ -218,21 +312,46 @@ class Parser:
                             response_match,
                             years_ids[responses_pages.index(response_page)],
                             responses_matchs.index(response_match) + 1)
-                        print(len(games_url))
+
                         responses_for_odds_request = self.get_response_for_odds_request(games_url,
                                                                                           years_urls[
                                                                                               responses_pages.index(
                                                                                                   response_page)])
                         odds_requests_url = []
+                        result_list = []
                         for response_for_odds_request in responses_for_odds_request:
-                            request_url = self.get_request_url_odds(response_for_odds_request)
+                            request_url,result = self.get_request_url_odds(response_for_odds_request)
                             odds_requests_url.append(request_url)
+                            result_list.append(result)
                         responses_odds = self.get_response_odds(odds_requests_url, games_url)
-                        print(len(responses_odds))
+                        for game_resp in responses_odds:
+                            self.out_match_data['time'] = timematch_list[responses_odds.index(game_resp)]
+                            self.out_match_data['url'] = games_url[responses_odds.index(game_resp)]
+                            self.out_match_data['command1'] = command1_list[responses_odds.index(game_resp)]
+                            self.out_match_data['command2'] = command2_list[responses_odds.index(game_resp)]
+                            self.out_match_data['result'] = result_list[responses_odds.index(game_resp)]
+                            self.out_match_data['odds'] = self.clear_response_odds(game_resp)
+                            self.out_match_data['date'] = date_list[responses_odds.index(game_resp)]
+                            self.out_match_data['req_api'] = None
+                            print(f"[INFO] {self.out_match_data['country']}  {self.out_match_data['champ']} "
+                                  f" {self.out_match_data['command1']} {self.out_match_data['command2']} " )
+                            print(self.out_match_data['url'])
+                            self.count_match += 1
+                        print(f'[INFO] Прошло {time.time() - self.start_time} секунд')
+                        print(f'[INFO] Добавлено {self.count_match} матчей')
+
+
+
 
 if __name__ == '__main__':
     parser = Parser()
-    parser.start()
-
+    try:
+        parser.start()
+    except ClientConnectorError:
+        print('[WARNING] Проблема с соединением')
+        parser.start()
+    except ConnectionError:
+        print('[WARNING] Проблема с соединением')
+        parser.start()
 
 

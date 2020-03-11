@@ -65,6 +65,21 @@ class Parser:
         responses = async_request.input_reuqests(urls, headers)
         return responses
 
+    def get_year_response_for_page(self, id, url_ref, p):
+        urls = [f'https://fb.oddsportal.com/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{pi+1}/?_=' \
+                    f'{int(time.time() * 1000)}' for pi in range(p)]
+        urls_ref = [url_ref for _ in range(p)]
+        headers = self.get_headers(urls_ref)
+        responses = async_request.input_reuqests(urls, headers)
+        return responses
+
+    def get_response_for_odds_request(self, urls, url_ref):
+        urls_ref = [url_ref for _ in range(len(urls))]
+        headers = self.get_headers(urls_ref)
+        responses = async_request.input_reuqests(urls, headers)
+        return responses
+
+
     def get_years_urls(self, response):
         soup = BS(response, 'lxml')
         main_menu = soup.select_one('.main-menu2.main-menu-gray')
@@ -76,14 +91,6 @@ class Parser:
         years_urls = self.href_to_url(years_href)
         print(years_urls)
         return years_urls
-
-    def get_year_response_for_page(self, id, url_ref, p):
-        urls = [f'https://fb.oddsportal.com/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{pi+1}/?_=' \
-                    f'{int(time.time() * 1000)}' for pi in range(p)]
-        urls_ref = [url_ref for _ in range(p)]
-        headers = self.get_headers(urls_ref)
-        responses = async_request.input_reuqests(urls, headers)
-        return responses
 
     def get_ajax_year_id(self, response):
         soup = BS(response, 'html.parser')
@@ -131,6 +138,23 @@ class Parser:
         games_urls = self.href_to_url(hrefs)
         return games_urls
 
+    def get_request_url_odds(self, response):
+        soup = BS(response, 'html.parser')
+        script = soup.select_one('script:contains("new OpHandler")').text
+        json_text = re.search('PageEvent\((.*?)\);', script)
+        if not json_text:
+            print('script not found')
+            sys.exit()
+        try:
+            json_data = json.loads(json_text.group(1))
+        except ValueError:
+            print('json not parsed')
+            sys.exit()
+        id1 = json_data.get('id')
+        id2 = unquote(json_data.get('xhash'))
+        url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
+        return url_out
+
 
 if __name__ == '__main__':
     parser = Parser()
@@ -157,6 +181,15 @@ if __name__ == '__main__':
                     games_url = parser.get_games(response_match,
                                                  years_ids[responses_pages.index(response_page)],
                                                  responses_matchs.index(response_match)+1)
-                    print(games_url)
+                    print(len(games_url))
+                    responses_for_odds_request = parser.get_response_for_odds_request(games_url,
+                                                                    years_urls[responses_pages.index(response_page)])
+                    odds_requests_url = []
+                    for response_for_odds_request in responses_for_odds_request:
+                        request_url = parser.get_request_url_odds(response_for_odds_request)
+                        odds_requests_url.append(request_url)
+                    print(odds_requests_url)
+                    print(len(responses_for_odds_request))
+
 
 

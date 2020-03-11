@@ -115,7 +115,6 @@ def add_bet_in_db(db, data):
     x = []
     p2 = []
     t = []
-    keys_game = []
     for d in data:
         for key, item in d['odds'].items():
             query = 'SELECT * FROM bookmaker'

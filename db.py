@@ -148,7 +148,6 @@ def add_bet_in_db(db, data):
     cur.close()
     con.close()
 
-
 def check_game_in_db(db, url):
     print('[INFO] Проверка игры ' + url)
     con = sqlite3.connect(db)

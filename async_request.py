@@ -20,10 +20,11 @@ async def req(urls, headers):
 
 
 def input_reuqests(urls, headers):
+    print('...')
     t0 = time.time()
     data = asyncio.run(req(urls, headers))
     t = time.time() - t0
-    print(t)
+    print('...')
     return data
 
 

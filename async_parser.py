@@ -197,8 +197,10 @@ class Parser:
         self.out_match_data['sport'] = string_sport
         country = soup_champ.select('#breadcrumb')[0].select('a')[2].text
         self.out_match_data['country'] = country
+        print(self.out_match_data['country'])
         string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
         self.out_match_data['champ'] = string_champ
+        print(self.out_match_data['champ'])
 
 
     def clear_response_odds(self, odds_response):
@@ -307,10 +309,10 @@ class Parser:
         self.parsing(urls_s)
 
     def update_full_list(self, url):
-        print('[СОХРАНЕНИЕ]')
         with open("hrefs_file.json", "r") as hrefs_file:
             urls = json.load(hrefs_file)
         if url not in urls:
+            print('[СОХРАНЕНИЕ]')
             urls.append(url)
         with open("hrefs_file.json", "w") as hrefs_file:
             json.dump(urls, hrefs_file)
@@ -347,6 +349,7 @@ class Parser:
                         command2_list_cont = []
                         timematch_list_cont = []
                         date_list_cont = []
+                        print('[INFO] Проверка игр')
                         for i in range(0,len(games_url)):
                             if not db.check_game_in_db(self.db, games_url[i]):
                                 games_url_cont.append(games_url[i])
@@ -367,9 +370,6 @@ class Parser:
                                                                                                   response_page)])
                         odds_requests_url, result_list = self.get_response_odds_and_result(responses_for_odds_request)
                         responses_odds = []
-                        print(len(games_url))
-                        print(odds_requests_url)
-                        print(len(odds_requests_url))
                         while not responses_odds:
                             responses_odds = self.get_response_odds(odds_requests_url, games_url)
                             for game_resp in responses_odds:
@@ -381,9 +381,7 @@ class Parser:
                                                                                                         responses_pages.index(
                                                                                                             response_page)])
                                     odds_requests_url, result_list = self.get_response_odds_and_result(responses_for_odds_request)
-                                    print(odds_requests_url)
                                     break
-                        print(len(responses_odds))
                         out_data = []
                         for game_resp in responses_odds:
                             odds = self.clear_response_odds(game_resp)
@@ -400,10 +398,7 @@ class Parser:
                                           'champ': self.out_match_data['champ'],
                                           'sport': self.out_match_data['sport'],
                                           'country': self.out_match_data['country']}
-                            print(match_data['url'])
                             out_data.append(match_data)
-                        for data in out_data:
-                            print(data['url'])
                         if out_data:
                             db.add_game_in_db(self.db, out_data)
                             db.add_bet_in_db(self.db, out_data)
@@ -411,7 +406,6 @@ class Parser:
                         print(f'[INFO] Прошло {time.time() - self.start_time} секунд')
                         print(f'[INFO] Добавлено {self.count_match} матчей')
                 self.update_full_list(years_urls[0])
-
 
     def get_response_odds_and_result(self, responses_for_odds_request):
         odds_requests_url = []
@@ -421,8 +415,6 @@ class Parser:
             odds_requests_url.append(request_url)
             result_list.append(result)
         return odds_requests_url,result_list
-
-
 
 
 if __name__ == '__main__':

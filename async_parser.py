@@ -425,6 +425,7 @@ if __name__ == '__main__':
             else:
                 parser.start()
         except Exception as ex:
+            time
             print(ex)
             print(traceback.format_exc())
             cont = 'д'

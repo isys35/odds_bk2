@@ -1,10 +1,11 @@
 import asyncio
 import aiohttp
 import time
-
+import ssl
+import certifi
 
 async def fetch_content(url, session, headers):
-    async with session.get(url, headers=headers) as response:
+    async with session.get(url, headers=headers,ssl=ssl.create_default_context(cafile=certifi.where())) as response:
         data = await response.text()
         return data
 

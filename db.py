@@ -1,5 +1,4 @@
 import sqlite3
-import time
 
 def add_game_in_db(db, data):
     con = sqlite3.connect(db)

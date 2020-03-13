@@ -7,8 +7,6 @@ import json
 from urllib.parse import unquote
 import time
 import traceback
-from aiohttp.client_exceptions import ClientConnectorError
-from requests.exceptions import ConnectionError
 import db
 
 

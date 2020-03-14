@@ -174,7 +174,11 @@ class Parser:
             result = col_content[0].select('p.result')[0].text
         except IndexError:
             result = 'Canceled'
-        script = soup.select_one('script:contains("new OpHandler")').text
+        try:
+            script = soup.select_one('script:contains("new OpHandler")').text
+        except AttributeError:
+            with open('page.html', 'w', encoding='utf8') as html_file:
+                html_file.write(str(soup))
         json_text = re.search('PageEvent\((.*?)\);', script)
         if not json_text:
             print('script not found')
@@ -191,12 +195,16 @@ class Parser:
 
     def update_first_data(self, response):
         soup_champ = BS(response, 'lxml')
-        string_sport = soup_champ.select('#breadcrumb')[0].select('a')[1].text
+        #try:
+        string_sport = soup_champ.select_one('#breadcrumb').select('a')[1].text
+        # except IndexError:
+        #     with open('page.html', 'w', encoding='utf8') as html_file:
+        #         html_file.write(str(soup_champ))
         self.out_match_data['sport'] = string_sport
-        country = soup_champ.select('#breadcrumb')[0].select('a')[2].text
+        country = soup_champ.select_one('#breadcrumb').select('a')[2].text
         self.out_match_data['country'] = country
         print(self.out_match_data['country'])
-        string_champ = soup_champ.select('#breadcrumb')[0].select('a')[3].text
+        string_champ = soup_champ.select_one('#breadcrumb').select('a')[3].text
         self.out_match_data['champ'] = string_champ
         print(self.out_match_data['champ'])
 
@@ -310,18 +318,21 @@ class Parser:
         with open("hrefs_file.json", "r") as hrefs_file:
             urls = json.load(hrefs_file)
         if url not in urls:
-            print('[СОХРАНЕНИЕ]')
+            print('[СОХРАНЕНИЕ] ' + url)
             urls.append(url)
         with open("hrefs_file.json", "w") as hrefs_file:
             json.dump(urls, hrefs_file)
 
     def parsing(self, urls):
         prepared_urls = self.prepare_url(urls)
-
         for urls in prepared_urls:
             responses_champ = self.get_responses(urls)
             self.out_match_data = {}
             for response in responses_champ:
+                print(urls[responses_champ.index(response)])
+                if 'Page not found' in response:
+                    self.update_full_list(urls[responses_champ.index(response)])
+                    continue
                 self.update_first_data(response)
                 years_urls = self.get_years_urls(response)
                 responses_years = self.get_responses(years_urls)
@@ -403,7 +414,7 @@ class Parser:
                         self.count_match += len(out_data)
                         print(f'[INFO] Прошло {time.time() - self.start_time} секунд')
                         print(f'[INFO] Добавлено {self.count_match} матчей')
-                self.update_full_list(years_urls[0])
+                self.update_full_list(urls[responses_champ.index(response)])
 
     def get_response_odds_and_result(self, responses_for_odds_request):
         odds_requests_url = []
@@ -425,7 +436,7 @@ if __name__ == '__main__':
             else:
                 parser.start()
         except Exception as ex:
-            time
+            time.sleep(1)
             print(ex)
             print(traceback.format_exc())
             cont = 'д'

@@ -112,6 +112,7 @@ class Parser:
         try:
             script = soup.select_one('script:contains("new OpHandler")').text
         except AttributeError:
+
             print('Page not found')
             return
         json_text = re.search('PageTournament\((.*?)\);', script)
@@ -335,6 +336,7 @@ class Parser:
                     continue
                 self.update_first_data(response)
                 years_urls = self.get_years_urls(response)
+                years_urls = [url for url in years_urls if url != 'https://www.oddsportal.com//results/']
                 responses_years = self.get_responses(years_urls)
                 years_ids = []
                 for response_year in responses_years:

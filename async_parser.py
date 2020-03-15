@@ -409,7 +409,8 @@ class Parser:
                                           'champ': self.out_match_data['champ'],
                                           'sport': self.out_match_data['sport'],
                                           'country': self.out_match_data['country']}
-                            out_data.append(match_data)
+                            if match_data['result'] != 'Canceled' and 'awarded' not in match_data['result']:
+                                out_data.append(match_data)
                         if out_data:
                             db.add_game_in_db(self.db, out_data)
                             db.add_bet_in_db(self.db, out_data)

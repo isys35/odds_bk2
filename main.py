@@ -14,9 +14,8 @@ import json
 import time
 import xlwt
 from collections import Counter
-import win32com.client
-import psutil
 import subprocess
+import async_parser
 
 def eror_handler(func):
     def wrapper(self):

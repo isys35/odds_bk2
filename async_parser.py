@@ -175,11 +175,11 @@ class Parser:
             result = col_content[0].select('p.result')[0].text
         except IndexError:
             result = 'Canceled'
-        try:
-            script = soup.select_one('script:contains("new OpHandler")').text
-        except AttributeError:
-            with open('page.html', 'w', encoding='utf8') as html_file:
-                html_file.write(str(soup))
+        # try:
+        script = soup.select_one('script:contains("new OpHandler")').text
+        # except AttributeError:
+        #     with open('page.html', 'w', encoding='utf8') as html_file:
+        #         html_file.write(str(soup))
         json_text = re.search('PageEvent\((.*?)\);', script)
         if not json_text:
             print('script not found')
@@ -372,6 +372,7 @@ class Parser:
                         command1_list = command1_list_cont
                         command2_list = command2_list_cont
                         timematch_list = timematch_list_cont
+                        print(len(timematch_list))
                         date_list = date_list_cont
                         if not games_url:
                             continue
@@ -379,6 +380,12 @@ class Parser:
                                                                                           years_urls[
                                                                                               responses_pages.index(
                                                                                                   response_page)])
+                        index_remove_list = []
+                        for i in range(len(responses_for_odds_request)):
+                            if 'Page not found' in responses_for_odds_request[i]:
+                                print('Page not found')
+                                index_remove_list.append(i)
+
                         odds_requests_url, result_list = self.get_response_odds_and_result(responses_for_odds_request)
                         responses_odds = []
                         while not responses_odds:
@@ -391,9 +398,35 @@ class Parser:
                                                                                                     years_urls[
                                                                                                         responses_pages.index(
                                                                                                             response_page)])
+                                    resp_remove = []
+                                    games_url_remove = []
+                                    command1_remove = []
+                                    command2_remove = []
+                                    timematch_remove = []
+                                    date_list_remove = []
+                                    for i in range(len(responses_for_odds_request)):
+                                        if 'Page not found' in responses_for_odds_request[i]:
+                                            print('Page not found')
+                                            resp_remove.append(responses_for_odds_request[i])
+                                            games_url_remove.append(games_url[i])
+                                            command1_remove.append(command1_list[i])
+                                            command2_remove.append(command2_list[i])
+                                            timematch_remove.append(timematch_list[i])
+                                            date_list_remove.append(date_list[i])
+                                    print(len(resp_remove), len(games_url_remove), len(command1_remove))
+                                    responses_for_odds_request = [resp for resp in responses_for_odds_request if
+                                                                  resp not in resp_remove]
+                                    games_url = [url for url in games_url if url not in games_url_remove]
+                                    command1_list = [c1 for c1 in command1_list if c1 not in command1_remove]
+                                    command2_list = [c2 for c2 in command2_list if c2 not in command2_remove]
+                                    timematch_list = [t for t in timematch_list if t not in timematch_remove]
+                                    date_list = [d for d in date_list if d not in date_list_remove]
                                     odds_requests_url, result_list = self.get_response_odds_and_result(responses_for_odds_request)
                                     break
                         out_data = []
+                        print(len(games_url))
+                        print(len(timematch_list))
+                        print(len(responses_odds))
                         for game_resp in responses_odds:
                             odds = self.clear_response_odds(game_resp)
                             if not odds:
@@ -405,7 +438,7 @@ class Parser:
                                           'result': result_list[responses_odds.index(game_resp)],
                                           'odds': odds,
                                           'date': date_list[responses_odds.index(game_resp)],
-                                          'req_api':None,
+                                          'req_api': None,
                                           'champ': self.out_match_data['champ'],
                                           'sport': self.out_match_data['sport'],
                                           'country': self.out_match_data['country']}
@@ -426,7 +459,9 @@ class Parser:
             request_url, result = self.get_request_url_odds(response_for_odds_request)
             odds_requests_url.append(request_url)
             result_list.append(result)
-        return odds_requests_url,result_list
+        return odds_requests_url, result_list
+
+
 
 
 if __name__ == '__main__':

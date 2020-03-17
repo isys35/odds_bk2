@@ -380,12 +380,17 @@ class Parser:
                                                                                           years_urls[
                                                                                               responses_pages.index(
                                                                                                   response_page)])
-                        index_remove_list = []
-                        for i in range(len(responses_for_odds_request)):
-                            if 'Page not found' in responses_for_odds_request[i]:
-                                print('Page not found')
-                                index_remove_list.append(i)
-
+                        index_remove_list = [i for i in range(len(responses_for_odds_request)) if
+                                             'Page not found' in responses_for_odds_request[i]]
+                        games_url = [games_url[i] for i in range(len(games_url)) if i not in index_remove_list]
+                        command2_list = [command2_list[i] for i in range(len(command2_list)) if
+                                         i not in index_remove_list]
+                        command1_list = [command1_list[i] for i in range(len(command1_list)) if
+                                         i not in index_remove_list]
+                        timematch_list = [timematch_list[i] for i in range(len(timematch_list)) if
+                                         i not in index_remove_list]
+                        date_list = [date_list[i] for i in range(len(date_list)) if
+                                          i not in index_remove_list]
                         odds_requests_url, result_list = self.get_response_odds_and_result(responses_for_odds_request)
                         responses_odds = []
                         while not responses_odds:

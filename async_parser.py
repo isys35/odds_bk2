@@ -66,17 +66,20 @@ class Parser:
         return headers
 
     def get_responses(self, urls):
+        print('get_responses')
         headers = self.get_headers(urls)
         responses = async_request.input_reuqests(urls, headers)
         return responses
 
     def get_year_response(self, ids, urls_ref, p):
+        print('get_year_response')
         urls = [f'https://fb.oddsportal.com/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{p}/?_={int(time.time() * 1000)}' for id in ids]
         headers = self.get_headers(urls_ref)
         responses = async_request.input_reuqests(urls, headers)
         return responses
 
     def get_year_response_for_page(self, id, url_ref, p):
+        print('get_year_response_for_page')
         urls = [f'https://fb.oddsportal.com/ajax-sport-country-tournament-archive/1/{id}/X0/1/2/{pi+1}/?_=' \
                     f'{int(time.time() * 1000)}' for pi in range(p)]
         urls_ref = [url_ref for _ in range(p)]
@@ -85,12 +88,15 @@ class Parser:
         return responses
 
     def get_response_for_odds_request(self, urls, url_ref):
+        print('get_response_for_odds_request')
         urls_ref = [url_ref for _ in range(len(urls))]
         headers = self.get_headers(urls_ref)
         responses = async_request.input_reuqests(urls, headers)
         return responses
 
     def get_response_odds(self, urls, urls_ref):
+        print('get_response_odds')
+        print(urls, urls_ref)
         headers = self.get_headers(urls_ref)
         urls = [url + (str(int(time.time()*1000))) for url in urls]
         responses = async_request.input_reuqests(urls, headers)
@@ -396,6 +402,8 @@ class Parser:
                                           i not in index_remove_list]
                         print(len(games_url), len(command1_list), len(command2_list), len(timematch_list),
                               len(date_list))
+                        if not games_url:
+                            continue
                         odds_requests_url, result_list = self.get_response_odds_and_result(responses_for_odds_request, games_url)
                         responses_odds = []
                         while not responses_odds:

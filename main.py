@@ -15,7 +15,6 @@ import time
 import xlwt
 from collections import Counter
 import subprocess
-import async_parser
 import db
 
 def eror_handler(func):

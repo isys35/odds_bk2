@@ -8,7 +8,7 @@ from browsermobproxy import Server
 import sqlite3
 import mainwindow
 import dialog
-from parserv2 import ParserThread
+from async_parser import Parser
 import webbrowser
 import json
 import time
@@ -284,19 +284,11 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             for check_box in self.checkboxlist:
                 check_box.clicked.connect(lambda state, chck=check_box: self.unselect_allcheckbox(chck))
 
+    @eror_handler
     def find_games_href(self):
-        href = self.lineEdit_4.text()
-        parser = ParserThread()
-        data = parser.get_match_data(href)
-        breadcump = parser.get_breadcump(href)
-        _time = parser.get_date(href, full=True)
-        _time =_time.split(',')[-1]
-        sport = breadcump.split('»')[1]
-        country = breadcump.split('»')[2]
-        champ = breadcump.split('»')[3]
-        command1 = breadcump.split('»')[-1].split('-')[0]
-        command2 = breadcump.split('»')[-1].split('-')[-1]
-        parser.browser.quit()
+        url = self.lineEdit_4.text()
+        parser = Parser()
+        data, info = parser.get_match_data(url)
         p1_out = 0
         p2_out = 0
         x_out = 0
@@ -317,9 +309,9 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         tb3 = 0  # ТБ 2.5
         tb4 = 0  # ТБ 3.5
         self.findedgames_for_url = {}
-        for key in data[1]:
+        for key in data:
             if key != 'Betfair Exchange':
-                game_data = self.find_match(key, data[1][key][0], data[1][key][1], data[1][key][2], mainlabel=False)
+                game_data = self.find_match(key, data[key][0], data[key][1], data[key][2], mainlabel=False)
                 points = [0, 0, 0]
                 self.findedgames_for_url[key] = [game_data, points]
                 for game in game_data:
@@ -516,9 +508,9 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.label_14.setText('X: ' + str(round(x_out_percent, 2)) + '% (' + str(round(x_out)) + ') '+ str(x_out_k))
         self.label_15.setText('П2: ' + str(round(p2_out_percent, 2)) + '% (' + str(round(p2_out)) + ') '+ str(p2_out_k))
         data_out = []
-        for key in data[1]:
-            data_el = [key, data[1][key][0], data[1][key][1], data[1][key][2], data[1][key][3], sport, country,
-                        command1, command2, champ, data[0], data[2], _time]
+        for key in data:
+            data_el = [key, data[key][0], data[key][1], data[key][2], data[key][3], info['sport'], info['country'],
+                        info['command1'], info['command2'], info['champ'], info['result'], info['date'], info['time']]
             data_out.append(data_el)
         self.update_table_games()
         self.update_koef_info(data_out)

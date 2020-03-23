@@ -65,7 +65,6 @@ class Parser:
         return headers
 
     def get_responses(self, urls):
-        print('get_responses')
         headers = self.get_headers(urls)
         responses = async_request.input_reuqests(urls, headers)
         return responses
@@ -91,6 +90,7 @@ class Parser:
         return responses
 
     def get_response_odds(self, urls, urls_ref):
+        print(urls, urls_ref)
         headers = self.get_headers(urls_ref)
         urls = [url + (str(int(time.time()*1000))) for url in urls]
         responses = async_request.input_reuqests(urls, headers)
@@ -112,7 +112,6 @@ class Parser:
         try:
             script = soup.select_one('script:contains("new OpHandler")').text
         except AttributeError:
-
             print('Page not found')
             return
         json_text = re.search('PageTournament\((.*?)\);', script)
@@ -168,18 +167,14 @@ class Parser:
             date_list.append(date)
         return timematch_list,date_list
 
-    def get_request_url_odds(self, response, u):
+    def get_request_url_odds(self, response):
         soup = BS(response, 'html.parser')
         col_content = soup.select('#col-content')
         try:
             result = col_content[0].select('p.result')[0].text
         except IndexError:
             result = 'Canceled'
-        try:
-            script = soup.select_one('script:contains("new OpHandler")').text
-        except AttributeError:
-            print(u)
-            print(response)
+        script = soup.select_one('script:contains("new OpHandler")').text
         json_text = re.search('PageEvent\((.*?)\);', script)
         if not json_text:
             print('script not found')
@@ -208,7 +203,6 @@ class Parser:
         string_champ = soup_champ.select_one('#breadcrumb').select('a')[3].text
         self.out_match_data['champ'] = string_champ
         print(self.out_match_data['champ'])
-
 
     def clear_response_odds(self, odds_response):
         """
@@ -454,10 +448,43 @@ class Parser:
         odds_requests_url = []
         result_list = []
         for i in range(len(responses_for_odds_request)):
-            request_url, result = self.get_request_url_odds(responses_for_odds_request[i], urls[i])
+            request_url, result = self.get_request_url_odds(responses_for_odds_request[i])
             odds_requests_url.append(request_url)
             result_list.append(result)
         return odds_requests_url, result_list
+
+    def get_game_info(self, response):
+        soup = BS(response, 'lxml')
+        col_content = soup.select_one('#col-content')
+        commands = col_content.select_one('h1').text.split(' - ')
+        command1 = commands[0]
+        command2 = commands[1]
+        time_match = col_content.select_one('.date')['class'][-1].replace('t', '').split('-')[0]
+        time_match, date = self.reformat_timelist([time_match])
+        time_match, date = time_match[0], date[0]
+        breadcump = soup.select_one('#breadcrumb')
+        sport = breadcump.select('a')[1].text
+        champ = breadcump.select('a')[-1].text
+        country = breadcump.select('a')[2].text
+        event_status = col_content.select_one('#event-status').text
+        return {'command1': command1,
+                'command2': command2,
+                'time': time_match,
+                'date': date,
+                'sport': sport,
+                'champ': champ,
+                'country': country,
+                'result': event_status}
+
+    def get_match_data(self, url):
+        response = self.get_response_for_odds_request([url], '')[0]
+        request = self.get_request_url_odds(response)[0]
+        response_odds = self.get_response_odds([request], [url])[0]
+        game_info = self.get_game_info(response)
+        data_odds = self.clear_response_odds(response_odds)
+        print(response_odds)
+        return data_odds, game_info
+
 
 if __name__ == '__main__':
     cont = input('Продолжить? (д/н) ')

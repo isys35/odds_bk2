@@ -111,3 +111,11 @@ def get_bookmakers_from_bet():
     cur.close()
     con.close()
     return data
+
+def get_count_games():
+    con = sqlite3.connect(DB)
+    cur = con.cursor()
+    query = 'SELECT COUNT(*) FROM game'
+    cur.execute(query)
+    games_count = cur.fetchone()[0]
+    return games_count

@@ -25,7 +25,6 @@ def input_reuqests(urls, headers):
     t0 = time.time()
     data = asyncio.run(req(urls, headers))
     t = time.time() - t0
-    print(data)
     print(t)
     print('...')
     return data

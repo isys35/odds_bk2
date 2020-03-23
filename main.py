@@ -84,18 +84,20 @@ def save_data_in_file(data):
                                 bookmaker[4]])
     list_for_excel.sort(key=lambda i: i[4])
     for el in list_for_excel:
+        major = ((1 / el[1] * 100)
+                 + (1 / el[2] * 100)
+                 + (1 / el[3] * 100)) - 100
+        el.append(major)
+    for el in list_for_excel:
         ws.write(target_row, 0, el[0])
         ws.write(target_row, 1, el[1], style_centr_aligment)
         ws.write(target_row, 10, str(time.ctime(el[4])).split(' ', 1)[1])
         ws.write(target_row, 2, el[2], style_centr_aligment)
         ws.write(target_row, 3, el[3], style_centr_aligment)
-        major = ((1 / el[1] * 100)
-                    + (1 / el[2] * 100)
-                    + (1 / el[3] * 100)) - 100
-        ws.write(target_row, 11, round(major, 2), style_centr_aligment)
-        p1_real = el[1] * (1+major/100)
-        x_real = el[2] * (1 + major / 100)
-        p2_real = el[3] * (1 + major / 100)
+        ws.write(target_row, 11, round(el[5], 2), style_centr_aligment)
+        p1_real = el[1] * (1 + el[5]/100)
+        x_real = el[2] * (1 + el[5] / 100)
+        p2_real = el[3] * (1 + el[5] / 100)
         ws.write(target_row, 4, round(p1_real, 2), style_centr_aligment)
         ws.write(target_row, 5, round(x_real, 2), style_centr_aligment)
         ws.write(target_row, 6, round(p2_real, 2), style_centr_aligment)
@@ -118,6 +120,40 @@ def save_data_in_file(data):
         ws.write(target_row, 8, xdelta, style_centr_aligment)
         ws.write(target_row, 9, p2delta, style_centr_aligment)
         target_row += 1
+    list_for_excel.sort(key=lambda i: i[5])
+    target_row = 5
+    for el in list_for_excel:
+        ws.write(target_row, 13, el[0])
+        ws.write(target_row, 14, el[1], style_centr_aligment)
+        ws.write(target_row, 23, str(time.ctime(el[4])).split(' ', 1)[1])
+        ws.write(target_row, 15, el[2], style_centr_aligment)
+        ws.write(target_row, 16, el[3], style_centr_aligment)
+        ws.write(target_row, 24, round(el[5], 2), style_centr_aligment)
+        p1_real = el[1] * (1 + el[5]/100)
+        x_real = el[2] * (1 + el[5] / 100)
+        p2_real = el[3] * (1 + el[5] / 100)
+        ws.write(target_row, 17, round(p1_real, 2), style_centr_aligment)
+        ws.write(target_row, 18, round(x_real, 2), style_centr_aligment)
+        ws.write(target_row, 19, round(p2_real, 2), style_centr_aligment)
+        p1delta = p1_real-el[1]
+        if p1_real > el[1]:
+            p1delta = '+' + str(round(p1delta, 2))
+        else:
+            p1delta = '-' + str(round(p1delta, 2))
+        xdelta = x_real - el[2]
+        if x_real > el[2]:
+            xdelta = '+' + str(round(xdelta, 2))
+        else:
+            xdelta = '-' + str(round(xdelta, 2))
+        p2delta = p2_real - el[3]
+        if p2_real > el[3]:
+            p2delta = '+' + str(round(p2delta, 2))
+        else:
+            p2delta = '-' + str(round(p2delta, 2))
+        ws.write(target_row, 20, p1delta, style_centr_aligment)
+        ws.write(target_row, 21, xdelta, style_centr_aligment)
+        ws.write(target_row, 22, p2delta, style_centr_aligment)
+        target_row += 1
     wb.save(file_name)
     full_path = 'D:/Project/odds_bk2/'
     with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
@@ -130,7 +166,11 @@ class SaveFile(QThread):
         self.data = data
 
     def run(self):
-        save_data_in_file(self.data)
+        try:
+            save_data_in_file(self.data)
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
 
 
 class UpdateBookmaker(QThread):

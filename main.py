@@ -16,6 +16,7 @@ import xlwt
 from collections import Counter
 import subprocess
 import async_parser
+import db
 
 def eror_handler(func):
     def wrapper(self):
@@ -123,10 +124,6 @@ def save_data_in_file(data):
         doc.poll()
 
 
-def printok():
-    print('ok')
-
-
 class SaveFile(QThread):
     def __init__(self, data):
         super().__init__()
@@ -134,6 +131,30 @@ class SaveFile(QThread):
 
     def run(self):
         save_data_in_file(self.data)
+
+
+class UpdateBookmaker(QThread):
+    def __init__(self, window):
+        super().__init__()
+        self.window = window
+
+    def update_bookmakers(self):
+        print('[INFO] Берём из базы букмекерские конторы')
+        bookmakers_from_bet = db.get_bookmakers_from_bet()
+        data_bookmaker_checklist = Counter(bookmakers_from_bet).most_common()
+        data_bookmaker_checklist.sort(key=lambda i: i[1], reverse=True)
+        print('[INFO] Строим виджеты CheckBox')
+        self.window.data_bookmaker_checklist = data_bookmaker_checklist
+        self.window.pushButton.click()
+        games_count = db.get_count_games()
+        self.window.label_3.setText('Всего игр в базе: ' + str(games_count))
+
+    def run(self):
+        try:
+            self.update_bookmakers()
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
 
 
 def get_point_result(result):
@@ -169,12 +190,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.logotypes_path = self.get_logotype_path()
         self.data_bookmaker = []
         self.checkboxlist = []
-        self.update_bookmakers()
-        self.update_label3()
+        self.data_bookmaker_checklist = []
+        #self.update_bookmakers()
+        #self.update_label3()
+        self.pushButton.setVisible(False)
+        self.pushButton.clicked.connect(self.update_bookmakers_layout)
         self.findedgames_for_url = {}
         self.finded_games = []
         self.counter_bets = 0
         self.counter_games = 0
+        self.pushButton_4.clicked.connect(self.update_finded_games)
         self.pushButton_5.clicked.connect(lambda: self.open_dialog(self.finded_games))
         #self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
         #self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
@@ -184,6 +209,8 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.server.start()
         self.pushButton_6.clicked.connect(self.find_games_href)
         self.tableWidget.cellClicked.connect(lambda row, column: self.open_dialog_from_table(row, column))
+        self.update_bookmakers = UpdateBookmaker(self)
+        self.update_bookmakers.start()
         for i in range(0, 5):
             self.tableWidget.resizeColumnToContents(i)
 
@@ -196,48 +223,26 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         with open("logotypepath.json", "r") as read_file:
             return json.load(read_file)
 
-    @brenchmark
-    def update_bookmakers(self):
-        """
-        Обновление окна букмекеров
-        :return:
-        """
-        print('[INFO] Берём из базы букмекерские конторы')
-        con = sqlite3.connect(self.db)
-        cur = con.cursor()
-        query = \
-            '''SELECT book.name AS book_name
-                FROM bet b
-                INNER JOIN bookmaker book ON b.bookmaker_id = book.id
-            '''
-        cur.execute(query)
-        out_execute = [bookmaker[0] for bookmaker in cur.fetchall()]
-        data_bookmaker_checklist = Counter(out_execute).most_common()
-        data_bookmaker_checklist.sort(key=lambda i: i[1], reverse=True)
-        cur.close()
-        con.close()
-        print('[INFO] Строим виджеты CheckBox')
-        self.checkboxlist = []
-        for bookmaker in data_bookmaker_checklist:
-            label = QtWidgets.QLabel(self.scrollAreaWidgetContents)
-            if bookmaker[0] in self.logotypes_path:
-                label.setPixmap(QtGui.QPixmap(self.logotypes_path[bookmaker[0]]))
-                self.formLayout.setWidget(data_bookmaker_checklist.index(bookmaker),
-                                            QtWidgets.QFormLayout.LabelRole, label)
-            check_box = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
-            check_box.setText('{} ({})'.format(str(bookmaker[0]), str(bookmaker[1])))
-            self.checkboxlist.append(check_box)
-            self.formLayout.setWidget(data_bookmaker_checklist.index(bookmaker),
-                                        QtWidgets.QFormLayout.FieldRole, check_box)
-            self.verticalLayout.addLayout(self.formLayout)
-        for check_box in self.checkboxlist:
-            check_box.clicked.connect(lambda state, chck=check_box: self.unselect_allcheckbox(chck))
-        self.pushButton_4.clicked.connect(self.update_finded_games)
-
     def update_finded_games(self):
         self.finded_games = self.find_match(self.get_select_bk(), self.lineEdit.text(),
                                             self.lineEdit_3.text(),
                                             self.lineEdit_2.text())
+
+    def update_bookmakers_layout(self):
+        for bookmaker in self.data_bookmaker_checklist:
+            label = QtWidgets.QLabel(self.scrollAreaWidgetContents)
+            if bookmaker[0] in self.logotypes_path:
+                label.setPixmap(QtGui.QPixmap(self.logotypes_path[bookmaker[0]]))
+                self.formLayout.setWidget(self.data_bookmaker_checklist.index(bookmaker),
+                                            QtWidgets.QFormLayout.LabelRole, label)
+            check_box = QtWidgets.QCheckBox(self.scrollAreaWidgetContents)
+            check_box.setText('{} ({})'.format(str(bookmaker[0]), str(bookmaker[1])))
+            self.checkboxlist.append(check_box)
+            self.formLayout.setWidget(self.data_bookmaker_checklist.index(bookmaker),
+                                        QtWidgets.QFormLayout.FieldRole, check_box)
+            self.verticalLayout.addLayout(self.formLayout)
+            for check_box in self.checkboxlist:
+                check_box.clicked.connect(lambda state, chck=check_box: self.unselect_allcheckbox(chck))
 
     def find_games_href(self):
         href = self.lineEdit_4.text()
@@ -533,19 +538,6 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             print('[WARNING] Не выбрана букмекерская контора')
             return select_bk
 
-    def update_label3(self):
-        """
-        Обновление счётчика " всего игр в базе"
-        :return:
-        """
-        con = sqlite3.connect(self.db)
-        cur = con.cursor()
-        query = 'SELECT COUNT(*) FROM game'
-        cur.execute(query)
-        all_game_count = cur.fetchone()
-        self.label_3.setText('Всего игр в базе: ' + str(all_game_count[0]))
-        cur.close()
-        con.close()
 
     def find_match(self, bookmaker, p1, x, p2, mainlabel=True):
         """

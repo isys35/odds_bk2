@@ -12,7 +12,6 @@ import db
 
 class Parser:
     def __init__(self):
-        self.db = 'soccer.db'
         self.soccer_url = 'https://www.oddsportal.com/results/#soccer'
         self.main_url = 'https://www.oddsportal.com'
         self.async_count = 10
@@ -368,7 +367,7 @@ class Parser:
                         date_list_cont = []
                         print('[INFO] Проверка игр')
                         for i in range(0,len(games_url)):
-                            if not db.check_game_in_db(self.db, games_url[i]):
+                            if not db.check_game_in_db(games_url[i]):
                                 games_url_cont.append(games_url[i])
                                 command1_list_cont.append(command1_list[i])
                                 command2_list_cont.append(command2_list[i])
@@ -458,8 +457,8 @@ class Parser:
                             if match_data['result'] != 'Canceled' and 'awarded' not in match_data['result']:
                                 out_data.append(match_data)
                         if out_data:
-                            db.add_game_in_db(self.db, out_data)
-                            db.add_bet_in_db(self.db, out_data)
+                            db.add_game_in_db(out_data)
+                            db.add_bet_in_db(out_data)
                         self.count_match += len(out_data)
                         print(f'[INFO] Прошло {time.time() - self.start_time} секунд')
                         print(f'[INFO] Добавлено {self.count_match} матчей')
@@ -473,9 +472,6 @@ class Parser:
             odds_requests_url.append(request_url)
             result_list.append(result)
         return odds_requests_url, result_list
-
-
-
 
 if __name__ == '__main__':
     cont = input('Продолжить? (д/н) ')

@@ -1,7 +1,10 @@
 import sqlite3
 
-def add_game_in_db(db, data):
-    con = sqlite3.connect(db)
+DB = 'soccer.db'
+
+
+def add_game_in_db(data):
+    con = sqlite3.connect(DB)
     cur = con.cursor()
     input_data = [[el['command1'],
                   el['command2'],
@@ -34,9 +37,9 @@ def add_bookmaker_in_db(name: str, cur, con):
         con.commit()
 
 
-def add_bet_in_db(db, data):
+def add_bet_in_db(data):
     print('[INFO] add bets in db.....')
-    con = sqlite3.connect(db)
+    con = sqlite3.connect(DB)
     cur = con.cursor()
     query = 'SELECT id,url FROM game'
     cur.execute(query)
@@ -79,8 +82,8 @@ def add_bet_in_db(db, data):
     con.close()
 
 
-def check_game_in_db(db, url):
-    con = sqlite3.connect(db)
+def check_game_in_db(url):
+    con = sqlite3.connect(DB)
     cur = con.cursor()
     query = 'SELECT EXISTS(SELECT * FROM game WHERE url = ? LIMIT 1)'
     cur.execute(query, [url])
@@ -93,3 +96,18 @@ def check_game_in_db(db, url):
         cur.close()
         con.close()
         return False
+
+
+def get_bookmakers_from_bet():
+    con = sqlite3.connect(DB)
+    cur = con.cursor()
+    query = \
+        '''SELECT book.name AS book_name
+            FROM bet b
+            INNER JOIN bookmaker book ON b.bookmaker_id = book.id
+        '''
+    cur.execute(query)
+    data = [bookmaker[0] for bookmaker in cur.fetchall()]
+    cur.close()
+    con.close()
+    return data

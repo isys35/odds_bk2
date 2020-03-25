@@ -482,7 +482,6 @@ class Parser:
         response_odds = self.get_response_odds([request], [url])[0]
         game_info = self.get_game_info(response)
         data_odds = self.clear_response_odds(response_odds)
-        print(response_odds)
         return data_odds, game_info
 
 

@@ -113,6 +113,26 @@ def get_bookmakers_from_bet():
     return data
 
 
+def get_games_for_href(data):
+    data = tuple([(el, data[el][0], data[el][1], data[el][2]) for el in data if el != 'Betfair Exchange'])
+    con = sqlite3.connect(DB)
+    cur = con.cursor()
+    dop_query = ''
+    for el in data[1:]:
+        dop_query += ' OR (book.name, b.p1, b.x, b.p2) =  {}'.format(el)
+    query = \
+        '''SELECT book.name, b.p1, b.x, b.p2, b.open_time, g.sport, g.country, g.command1, g.command2, g.liga, g.result, g.date, g.timematch
+            FROM bet b
+            INNER JOIN bookmaker book ON b.bookmaker_id = book.id
+            INNER JOIN game g ON b.game_id = g.id
+            WHERE (book.name, b.p1, b.x, b.p2) = {}
+        '''.format(data[0]) + dop_query
+    cur.execute(query)
+    d = cur.fetchall()
+    cur.close()
+    con.close()
+    return d
+
 def get_count_games():
     con = sqlite3.connect(DB)
     cur = con.cursor()

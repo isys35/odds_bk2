@@ -88,14 +88,10 @@ def check_game_in_db(url):
     query = 'SELECT EXISTS(SELECT * FROM game WHERE url = ? LIMIT 1)'
     cur.execute(query, [url])
     game_bool = [game[0] for game in cur.fetchall()][0]
+    cur.close()
+    con.close()
     if game_bool:
-        cur.close()
-        con.close()
         return True
-    else:
-        cur.close()
-        con.close()
-        return False
 
 
 def get_bookmakers_from_bet():
@@ -121,7 +117,7 @@ def get_games_for_href(data):
     for el in data[1:]:
         dop_query += ' OR (book.name, b.p1, b.x, b.p2) =  {}'.format(el)
     query = \
-        '''SELECT book.name, b.p1, b.x, b.p2, b.open_time, g.sport, g.country, g.command1, g.command2, g.liga, g.result, g.date, g.timematch
+        '''SELECT book.name, b.p1, b.x, b.p2, b.open_time, g.sport, g.country, g.command1, g.command2, g.liga, g.result, g.date, g.timematch, g.url 
             FROM bet b
             INNER JOIN bookmaker book ON b.bookmaker_id = book.id
             INNER JOIN game g ON b.game_id = g.id

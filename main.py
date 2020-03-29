@@ -308,55 +308,67 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         tb3 = 0  # ТБ 2.5
         tb4 = 0  # ТБ 3.5
         self.findedgames_for_url = {}
-        for key in data:
-            if key != 'Betfair Exchange':
-                game_data = self.find_match(key, data[key][0], data[key][1], data[key][2], mainlabel=False)
-                points = [0, 0, 0]
-                self.findedgames_for_url[key] = [game_data, points]
-                for game in game_data:
-                    result = game['result']
-                    p1_r, p2_r = get_point_result(result)
-                    if float(p1_r) > float(p2_r):
-                        self.findedgames_for_url[key][1][0] += 1
-                        p1_out += 1
-                    elif float(p1_r) < float(p2_r):
-                        self.findedgames_for_url[key][1][2] += 1
-                        p2_out += 1
-                    elif float(p1_r) == float(p2_r):
-                        self.findedgames_for_url[key][1][1] += 1
-                        x_out += 1
-                    if p1_r - p2_r > 0.5:
-                        k1_1 += 1
-                    if p1_r - p2_r > 1.5:
-                        k1_2 += 1
-                    if p1_r - p2_r > 2.5:
-                        k1_3 += 1
-                    if p1_r - p2_r > 3.5:
-                        k1_4 += 1
-                    if p1_r - p2_r > 4.5:
-                        k1_5 += 1
-                    if p2_r - p1_r > 0.5:
-                        k2_1 += 1
-                    if p2_r - p1_r > 1.5:
-                        k2_2 += 1
-                    if p2_r - p1_r > 2.5:
-                        k2_3 += 1
-                    if p2_r - p1_r > 3.5:
-                        k2_4 += 1
-                    if p2_r - p1_r > 4.5:
-                        k2_5 += 1
-                    if p1_r == p2_r:
-                        x += 1
-                    if p1_r and p2_r:
-                        oz += 1
-                    if p1_r + p2_r > 0.5:
-                        tb1 += 1
-                    if p1_r + p2_r > 1.5:
-                        tb2 += 1
-                    if p1_r + p2_r > 2.5:
-                        tb3 += 1
-                    if p1_r + p2_r > 3.5:
-                        tb4 += 1
+        game_data_db = db.get_games_for_href(data)
+        game_data = []
+        for game in game_data_db:
+            game_data.append({'command1': game[7],
+                              'command2': game[8],
+                              'url': game[13],
+                              'date': game[11],
+                              'time': game[12],
+                              'result': game[10],
+                              'sport': game[5],
+                              'country': game[6],
+                              'champ': game[9],
+                              'bookmaker': game[0]
+                              })
+        for game in game_data:
+            if game['bookmaker'] not in self.findedgames_for_url:
+                self.findedgames_for_url[game['bookmaker']] = [[], [0, 0, 0]]
+            self.findedgames_for_url[game['bookmaker']][0].append(game)
+            result = game['result']
+            p1_r, p2_r = get_point_result(result)
+            if float(p1_r) > float(p2_r):
+                self.findedgames_for_url[game['bookmaker']][1][0] += 1
+                p1_out += 1
+            elif float(p1_r) < float(p2_r):
+                self.findedgames_for_url[game['bookmaker']][1][2] += 1
+                p2_out += 1
+            elif float(p1_r) == float(p2_r):
+                self.findedgames_for_url[game['bookmaker']][1][1] += 1
+                x_out += 1
+            if p1_r - p2_r > 0.5:
+                k1_1 += 1
+            if p1_r - p2_r > 1.5:
+                k1_2 += 1
+            if p1_r - p2_r > 2.5:
+                k1_3 += 1
+            if p1_r - p2_r > 3.5:
+                k1_4 += 1
+            if p1_r - p2_r > 4.5:
+                k1_5 += 1
+            if p2_r - p1_r > 0.5:
+                k2_1 += 1
+            if p2_r - p1_r > 1.5:
+                k2_2 += 1
+            if p2_r - p1_r > 2.5:
+                k2_3 += 1
+            if p2_r - p1_r > 3.5:
+                k2_4 += 1
+            if p2_r - p1_r > 4.5:
+                k2_5 += 1
+            if p1_r == p2_r:
+                x += 1
+            if p1_r and p2_r:
+                oz += 1
+            if p1_r + p2_r > 0.5:
+                tb1 += 1
+            if p1_r + p2_r > 1.5:
+                tb2 += 1
+            if p1_r + p2_r > 2.5:
+                tb3 += 1
+            if p1_r + p2_r > 3.5:
+                tb4 += 1
         all_out = p1_out + p2_out + x_out
         self.label_12.setText('Найдено матчей: {}'.format(all_out))
         p1_out_percent = 0

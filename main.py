@@ -87,16 +87,28 @@ def save_data_in_file(data):
                  + (1 / el[2] * 100)
                  + (1 / el[3] * 100)) - 100
         el.append(major)
+    p1_sum = 0
+    x_sum = 0
+    p2_sum = 0
+    p1_sum_real = 0
+    x_sum_real = 0
+    p2_sum_real = 0
     for el in list_for_excel:
         ws.write(target_row, 0, el[0])
         ws.write(target_row, 1, el[1], style_centr_aligment)
+        p1_sum += el[1]
         ws.write(target_row, 10, str(time.ctime(el[4])).split(' ', 1)[1])
         ws.write(target_row, 2, el[2], style_centr_aligment)
+        x_sum += el[2]
         ws.write(target_row, 3, el[3], style_centr_aligment)
+        p2_sum += el[3]
         ws.write(target_row, 11, round(el[5], 2), style_centr_aligment)
         p1_real = el[1] * (1 + el[5]/100)
+        p1_sum_real += p1_real
         x_real = el[2] * (1 + el[5] / 100)
+        x_sum_real += x_real
         p2_real = el[3] * (1 + el[5] / 100)
+        p2_sum_real += p2_real
         ws.write(target_row, 4, round(p1_real, 2), style_centr_aligment)
         ws.write(target_row, 5, round(x_real, 2), style_centr_aligment)
         ws.write(target_row, 6, round(p2_real, 2), style_centr_aligment)
@@ -119,6 +131,18 @@ def save_data_in_file(data):
         ws.write(target_row, 8, xdelta, style_centr_aligment)
         ws.write(target_row, 9, p2delta, style_centr_aligment)
         target_row += 1
+    p1_average = p1_sum/len(list_for_excel)
+    x_average = x_sum / len(list_for_excel)
+    p2_average = p2_sum / len(list_for_excel)
+    ws.write(target_row, 1, p1_average)
+    ws.write(target_row, 2, x_average)
+    ws.write(target_row, 3, p2_average)
+    p1_average_real = p1_sum_real / len(list_for_excel)
+    x_average_real = x_sum_real / len(list_for_excel)
+    p2_average_real = p2_sum_real / len(list_for_excel)
+    ws.write(target_row, 4, p1_average_real)
+    ws.write(target_row, 5, x_average_real)
+    ws.write(target_row, 6, p2_average_real)
     list_for_excel.sort(key=lambda i: i[5])
     target_row = 5
     for el in list_for_excel:

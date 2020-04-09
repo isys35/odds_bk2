@@ -17,6 +17,7 @@ from collections import Counter
 import subprocess
 import db
 
+
 def eror_handler(func):
     def wrapper(self):
         try:
@@ -55,7 +56,18 @@ def save_data_in_file(data):
     aligment.horz = xlwt.Alignment.HORZ_CENTER
     style_centr_aligment = xlwt.XFStyle()
     style_centr_aligment.alignment = aligment
-    #ws.col(2).width = 6000
+    pattern = xlwt.Pattern()
+    pattern.pattern = xlwt.Pattern.SOLID_PATTERN
+    pattern.pattern_fore_colour = xlwt.Style.colour_map['yellow']
+    style_yellow = xlwt.XFStyle()
+    style_yellow.pattern = pattern
+    style_yellow.alignment = aligment
+    pattern2 = xlwt.Pattern()
+    pattern2.pattern = xlwt.Pattern.SOLID_PATTERN
+    pattern2.pattern_fore_colour = xlwt.Style.colour_map['orange']
+    style_orange = xlwt.XFStyle()
+    style_orange.pattern = pattern2
+    style_orange.alignment = aligment
     ws.col(0).width = 4000
     ws.col(10).width = 6000
     #ws.col(6).width = 6000
@@ -131,33 +143,67 @@ def save_data_in_file(data):
         ws.write(target_row, 8, xdelta, style_centr_aligment)
         ws.write(target_row, 9, p2delta, style_centr_aligment)
         target_row += 1
-    p1_average = p1_sum/len(list_for_excel)
-    x_average = x_sum / len(list_for_excel)
-    p2_average = p2_sum / len(list_for_excel)
-    ws.write(target_row, 1, p1_average)
-    ws.write(target_row, 2, x_average)
-    ws.write(target_row, 3, p2_average)
-    p1_average_real = p1_sum_real / len(list_for_excel)
-    x_average_real = x_sum_real / len(list_for_excel)
-    p2_average_real = p2_sum_real / len(list_for_excel)
-    ws.write(target_row, 4, p1_average_real)
-    ws.write(target_row, 5, x_average_real)
-    ws.write(target_row, 6, p2_average_real)
+    p1_average = round(p1_sum/ len(list_for_excel), 2)
+    x_average = round(x_sum / len(list_for_excel), 2)
+    p2_average = round(p2_sum / len(list_for_excel), 2)
+    ws.write(target_row, 14, p1_average, style_centr_aligment)
+    ws.write(target_row, 15, x_average, style_centr_aligment)
+    ws.write(target_row, 16, p2_average, style_centr_aligment)
+    p1_average_real = round(p1_sum_real / len(list_for_excel), 2)
+    x_average_real = round(x_sum_real / len(list_for_excel), 2)
+    p2_average_real = round(p2_sum_real / len(list_for_excel), 2)
+    ws.write(target_row, 17, p1_average_real, style_centr_aligment)
+    ws.write(target_row, 18, x_average_real, style_centr_aligment)
+    ws.write(target_row, 19, p2_average_real, style_centr_aligment)
     list_for_excel.sort(key=lambda i: i[5])
     target_row = 5
     for el in list_for_excel:
         ws.write(target_row, 13, el[0])
-        ws.write(target_row, 14, el[1], style_centr_aligment)
+        if el[1] < p1_average:
+            ws.write(target_row, 14, el[1], style_yellow)
+        elif el[1] == p1_average:
+            ws.write(target_row, 14, el[1], style_orange)
+        else:
+            ws.write(target_row, 14, el[1], style_centr_aligment)
+        if el[2] < x_average:
+            ws.write(target_row, 15, el[2], style_yellow)
+        elif el[2] == x_average:
+            ws.write(target_row, 15, el[2], style_orange)
+        else:
+            ws.write(target_row, 15, el[2], style_centr_aligment)
+        if el[3] < p2_average:
+            ws.write(target_row, 16, el[3], style_yellow)
+        elif el[3] == p2_average:
+            ws.write(target_row, 16, el[3], style_orange)
+        else:
+            ws.write(target_row, 16, el[3], style_centr_aligment)
         ws.write(target_row, 23, str(time.ctime(el[4])).split(' ', 1)[1])
-        ws.write(target_row, 15, el[2], style_centr_aligment)
-        ws.write(target_row, 16, el[3], style_centr_aligment)
         ws.write(target_row, 24, round(el[5], 2), style_centr_aligment)
         p1_real = el[1] * (1 + el[5]/100)
         x_real = el[2] * (1 + el[5] / 100)
         p2_real = el[3] * (1 + el[5] / 100)
-        ws.write(target_row, 17, round(p1_real, 2), style_centr_aligment)
-        ws.write(target_row, 18, round(x_real, 2), style_centr_aligment)
-        ws.write(target_row, 19, round(p2_real, 2), style_centr_aligment)
+
+        if round(p1_real, 2) < p1_average_real:
+            ws.write(target_row, 17, round(p1_real, 2), style_yellow)
+        elif round(p1_real, 2) == p1_average_real:
+            ws.write(target_row, 17, round(p1_real, 2), style_orange)
+        else:
+            ws.write(target_row, 17, round(p1_real, 2), style_centr_aligment)
+
+        if round(x_real, 2) < x_average_real:
+            ws.write(target_row, 18, round(x_real, 2), style_yellow)
+        elif round(x_real, 2) == x_average_real:
+            ws.write(target_row, 18, round(x_real, 2), style_orange)
+        else:
+            ws.write(target_row, 18, round(x_real, 2), style_centr_aligment)
+
+        if round(p2_real, 2) < p2_average_real:
+            ws.write(target_row, 19, round(p2_real, 2), style_yellow)
+        elif round(p2_real, 2) == p2_average_real:
+            ws.write(target_row, 19, round(p2_real, 2), style_orange)
+        else:
+            ws.write(target_row, 19, round(p2_real, 2), style_centr_aligment)
+
         p1delta = p1_real-el[1]
         if p1_real > el[1]:
             p1delta = '+' + str(round(p1delta, 2))
@@ -267,6 +313,7 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         #self.pushButton_3.clicked.connect(lambda: self.start_thread_parsing('start'))
         #self.pushButton.clicked.connect(lambda: self.start_thread_parsing('continue'))
         #self.pushButton_2.clicked.connect(lambda: self.start_thread_parsing('lastyear'))
+        self.pushButton_2.clicked.connect(self.create_excel_for_game)
         self.server = Server(path=r"browsermob-proxy-2.1.4\bin\browsermob-proxy.bat",
                              options={'existing_proxy_port_to_use': 8090})
         self.server.start()
@@ -276,6 +323,23 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.update_bookmakers.start()
         for i in range(0, 5):
             self.tableWidget.resizeColumnToContents(i)
+
+    def create_excel_for_game(self):
+        url = self.lineEdit_5.text()
+        parser = Parser()
+        data, info = parser.get_match_data(url)
+        print(data)
+        print(info)
+        data_out = []
+        bookmakers_exteptions = ['Betfair', 'Betfair Exchange', 'Matchbook']
+        for key in data:
+            if key in bookmakers_exteptions:
+                continue
+            data_el = [key, data[key][0], data[key][1], data[key][2], data[key][3], info['sport'], info['country'],
+                       info['command1'], info['command2'], info['champ'], info['result'], info['date'], info['time']]
+            data_out.append(data_el)
+        self.savedata = SaveFile(data_out)
+        self.savedata.start()
 
     def open_dialog_from_table(self, row, column):
         if column == 5:

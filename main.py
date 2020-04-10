@@ -76,7 +76,7 @@ def save_data_in_file(data):
     style_red.alignment = aligment
     pattern_g = xlwt.Pattern()
     pattern_g.pattern = xlwt.Pattern.SOLID_PATTERN
-    pattern_g.pattern_fore_colour = xlwt.Style.colour_map['red']
+    pattern_g.pattern_fore_colour = xlwt.Style.colour_map['green']
     style_green = xlwt.XFStyle()
     style_green.pattern = pattern_g
     style_green.alignment = aligment

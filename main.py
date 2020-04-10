@@ -56,18 +56,30 @@ def save_data_in_file(data):
     aligment.horz = xlwt.Alignment.HORZ_CENTER
     style_centr_aligment = xlwt.XFStyle()
     style_centr_aligment.alignment = aligment
-    pattern = xlwt.Pattern()
-    pattern.pattern = xlwt.Pattern.SOLID_PATTERN
-    pattern.pattern_fore_colour = xlwt.Style.colour_map['yellow']
+    pattern_y = xlwt.Pattern()
+    pattern_y.pattern = xlwt.Pattern.SOLID_PATTERN
+    pattern_y.pattern_fore_colour = xlwt.Style.colour_map['yellow']
     style_yellow = xlwt.XFStyle()
-    style_yellow.pattern = pattern
+    style_yellow.pattern = pattern_y
     style_yellow.alignment = aligment
-    pattern2 = xlwt.Pattern()
-    pattern2.pattern = xlwt.Pattern.SOLID_PATTERN
-    pattern2.pattern_fore_colour = xlwt.Style.colour_map['orange']
+    pattern_o = xlwt.Pattern()
+    pattern_o.pattern = xlwt.Pattern.SOLID_PATTERN
+    pattern_o.pattern_fore_colour = xlwt.Style.colour_map['orange']
     style_orange = xlwt.XFStyle()
-    style_orange.pattern = pattern2
+    style_orange.pattern = pattern_o
     style_orange.alignment = aligment
+    pattern_r = xlwt.Pattern()
+    pattern_r.pattern = xlwt.Pattern.SOLID_PATTERN
+    pattern_r.pattern_fore_colour = xlwt.Style.colour_map['red']
+    style_red = xlwt.XFStyle()
+    style_red.pattern = pattern_r
+    style_red.alignment = aligment
+    pattern_g = xlwt.Pattern()
+    pattern_g.pattern = xlwt.Pattern.SOLID_PATTERN
+    pattern_g.pattern_fore_colour = xlwt.Style.colour_map['red']
+    style_green = xlwt.XFStyle()
+    style_green.pattern = pattern_g
+    style_green.alignment = aligment
     ws.col(0).width = 4000
     ws.col(10).width = 6000
     #ws.col(6).width = 6000
@@ -105,21 +117,33 @@ def save_data_in_file(data):
     p1_sum_real = 0
     x_sum_real = 0
     p2_sum_real = 0
+    p1_lst = []
+    x_lst = []
+    p2_lst = []
+    p1_real_lst = []
+    x_real_lst = []
+    p2_real_lst = []
     for el in list_for_excel:
         ws.write(target_row, 0, el[0])
         ws.write(target_row, 1, el[1], style_centr_aligment)
+        p1_lst.append(el[1])
         p1_sum += el[1]
         ws.write(target_row, 10, str(time.ctime(el[4])).split(' ', 1)[1])
         ws.write(target_row, 2, el[2], style_centr_aligment)
         x_sum += el[2]
+        x_lst.append(el[2])
         ws.write(target_row, 3, el[3], style_centr_aligment)
         p2_sum += el[3]
+        p2_lst.append(el[3])
         ws.write(target_row, 11, round(el[5], 2), style_centr_aligment)
         p1_real = el[1] * (1 + el[5]/100)
+        p1_real_lst.append(p1_real)
         p1_sum_real += p1_real
         x_real = el[2] * (1 + el[5] / 100)
+        x_real_lst.append(x_real)
         x_sum_real += x_real
         p2_real = el[3] * (1 + el[5] / 100)
+        p2_real_lst.append(p2_real)
         p2_sum_real += p2_real
         ws.write(target_row, 4, round(p1_real, 2), style_centr_aligment)
         ws.write(target_row, 5, round(x_real, 2), style_centr_aligment)
@@ -146,12 +170,25 @@ def save_data_in_file(data):
     p1_average = round(p1_sum/ len(list_for_excel), 2)
     x_average = round(x_sum / len(list_for_excel), 2)
     p2_average = round(p2_sum / len(list_for_excel), 2)
+    p1_max = max(p1_lst)
+    x_max = max(x_lst)
+    p2_max = max(p2_lst)
+    p1_min = min(p1_lst)
+    x_min = min(x_lst)
+    p2_min = min(p2_lst)
+    print(p1_max, x_max, p2_max)
     ws.write(target_row, 14, p1_average, style_centr_aligment)
     ws.write(target_row, 15, x_average, style_centr_aligment)
     ws.write(target_row, 16, p2_average, style_centr_aligment)
     p1_average_real = round(p1_sum_real / len(list_for_excel), 2)
     x_average_real = round(x_sum_real / len(list_for_excel), 2)
     p2_average_real = round(p2_sum_real / len(list_for_excel), 2)
+    p1_real_max = max(p1_real_lst)
+    x_real_max = max(x_real_lst)
+    p2_real_max = max(p2_real_lst)
+    p1_real_min = max(p1_real_lst)
+    x_real_min = max(x_real_lst)
+    p2_real_min = max(p2_real_lst)
     ws.write(target_row, 17, p1_average_real, style_centr_aligment)
     ws.write(target_row, 18, x_average_real, style_centr_aligment)
     ws.write(target_row, 19, p2_average_real, style_centr_aligment)
@@ -159,50 +196,82 @@ def save_data_in_file(data):
     target_row = 5
     for el in list_for_excel:
         ws.write(target_row, 13, el[0])
-        if el[1] < p1_average:
-            ws.write(target_row, 14, el[1], style_yellow)
-        elif el[1] == p1_average:
-            ws.write(target_row, 14, el[1], style_orange)
+        if el[1] == p1_max:
+            ws.write(target_row, 14, el[1], style_red)
+        elif el[1] == p1_min:
+            ws.write(target_row, 14, el[1], style_green)
         else:
-            ws.write(target_row, 14, el[1], style_centr_aligment)
-        if el[2] < x_average:
-            ws.write(target_row, 15, el[2], style_yellow)
-        elif el[2] == x_average:
-            ws.write(target_row, 15, el[2], style_orange)
+            if el[1] < p1_average:
+                ws.write(target_row, 14, el[1], style_yellow)
+            elif el[1] == p1_average:
+                ws.write(target_row, 14, el[1], style_orange)
+            else:
+                ws.write(target_row, 14, el[1], style_centr_aligment)
+
+        if el[2] == x_max:
+            ws.write(target_row, 15, el[2], style_red)
+        elif el[2] == x_min:
+            ws.write(target_row, 15, el[2], style_green)
         else:
-            ws.write(target_row, 15, el[2], style_centr_aligment)
-        if el[3] < p2_average:
-            ws.write(target_row, 16, el[3], style_yellow)
-        elif el[3] == p2_average:
-            ws.write(target_row, 16, el[3], style_orange)
+            if el[2] < x_average:
+                ws.write(target_row, 15, el[2], style_yellow)
+            elif el[2] == x_average:
+                ws.write(target_row, 15, el[2], style_orange)
+            else:
+                ws.write(target_row, 15, el[2], style_centr_aligment)
+
+        if el[3] == p2_max:
+            ws.write(target_row, 16, el[3], style_red)
+        elif el[3] == p2_min:
+            ws.write(target_row, 16, el[3], style_green)
         else:
-            ws.write(target_row, 16, el[3], style_centr_aligment)
+            if el[3] < p2_average:
+                ws.write(target_row, 16, el[3], style_yellow)
+            elif el[3] == p2_average:
+                ws.write(target_row, 16, el[3], style_orange)
+            else:
+                ws.write(target_row, 16, el[3], style_centr_aligment)
         ws.write(target_row, 23, str(time.ctime(el[4])).split(' ', 1)[1])
         ws.write(target_row, 24, round(el[5], 2), style_centr_aligment)
         p1_real = el[1] * (1 + el[5]/100)
         x_real = el[2] * (1 + el[5] / 100)
         p2_real = el[3] * (1 + el[5] / 100)
 
-        if round(p1_real, 2) < p1_average_real:
-            ws.write(target_row, 17, round(p1_real, 2), style_yellow)
-        elif round(p1_real, 2) == p1_average_real:
-            ws.write(target_row, 17, round(p1_real, 2), style_orange)
+        if round(p1_real, 2) == p1_real_max:
+            ws.write(target_row, 17, round(p1_real, 2), style_red)
+        elif round(p1_real, 2) == p1_real_min:
+            ws.write(target_row, 17, round(p1_real, 2), style_green)
         else:
-            ws.write(target_row, 17, round(p1_real, 2), style_centr_aligment)
+            if round(p1_real, 2) < p1_average_real:
+                ws.write(target_row, 17, round(p1_real, 2), style_yellow)
+            elif round(p1_real, 2) == p1_average_real:
+                ws.write(target_row, 17, round(p1_real, 2), style_orange)
+            else:
+                ws.write(target_row, 17, round(p1_real, 2), style_centr_aligment)
 
-        if round(x_real, 2) < x_average_real:
-            ws.write(target_row, 18, round(x_real, 2), style_yellow)
-        elif round(x_real, 2) == x_average_real:
-            ws.write(target_row, 18, round(x_real, 2), style_orange)
+        if round(x_real, 2) == x_real_max:
+            ws.write(target_row, 18, round(x_real, 2), style_red)
+        elif round(x_real, 2) == x_real_min:
+            ws.write(target_row, 18, round(x_real, 2), style_green)
         else:
-            ws.write(target_row, 18, round(x_real, 2), style_centr_aligment)
+            if round(x_real, 2) < x_average_real:
+                ws.write(target_row, 18, round(x_real, 2), style_yellow)
+            elif round(x_real, 2) == x_average_real:
+                ws.write(target_row, 18, round(x_real, 2), style_orange)
+            else:
+                ws.write(target_row, 18, round(x_real, 2), style_centr_aligment)
 
-        if round(p2_real, 2) < p2_average_real:
-            ws.write(target_row, 19, round(p2_real, 2), style_yellow)
-        elif round(p2_real, 2) == p2_average_real:
-            ws.write(target_row, 19, round(p2_real, 2), style_orange)
+        if round(p2_real, 2) == p2_real_max:
+            ws.write(target_row, 19, round(p2_real, 2), style_red)
+        elif round(p2_real, 2) == p2_real_min:
+            ws.write(target_row, 19, round(p2_real, 2), style_green)
         else:
-            ws.write(target_row, 19, round(p2_real, 2), style_centr_aligment)
+            if round(p2_real, 2) < p2_average_real:
+                ws.write(target_row, 19, round(p2_real, 2), style_yellow)
+            elif round(p2_real, 2) == p2_average_real:
+                ws.write(target_row, 19, round(p2_real, 2), style_orange)
+            else:
+                ws.write(target_row, 19, round(p2_real, 2), style_centr_aligment)
 
         p1delta = p1_real-el[1]
         if p1_real > el[1]:

@@ -186,7 +186,11 @@ class Parser:
             sys.exit()
         id1 = json_data.get('id')
         id2 = unquote(json_data.get('xhash'))
-        url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
+        string_sport = soup.select_one('#breadcrumb').select('a')[1].text
+        if string_sport == 'Tennis':
+            url_out = 'https://fb.oddsportal.com/feed/match/1-2-{}-3-2-{}.dat?_='.format(id1, id2)
+        else:
+            url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
         return url_out, result
 
     def update_first_data(self, response):
@@ -204,7 +208,7 @@ class Parser:
         self.out_match_data['champ'] = string_champ
         print(self.out_match_data['champ'])
 
-    def clear_response_odds(self, odds_response):
+    def clear_response_odds(self, odds_response, ishod=3):
         """
         Очистка ответа от API от ненужных данных
         :param full:
@@ -217,14 +221,24 @@ class Parser:
         left_cut1 = odds_response.split('globals.jsonpCallback', 1)
         right_cut1 = left_cut1[-1].rsplit(';', 1)
         full_data = [el for el in eval(right_cut1[0])]
+        print(full_data[1])
         try:
-            dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
+            if ishod == 2:
+                dict_openodds = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['opening_odds']
+            else:
+                dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
         except TypeError:
             return
-        dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
-        dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
-        dict_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['change_time']
-        outcome_id = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['OutcomeID']
+        if ishod == 2:
+            dict_odds = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['odds']
+            dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['opening_change_time']
+            dict_change_time = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['change_time']
+            outcome_id = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['OutcomeID']
+        else:
+            dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
+            dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
+            dict_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['change_time']
+            outcome_id = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['OutcomeID']
         out_dict_odds = {}
         for bk_id, odds in dict_openodds.items():
             if type(odds) is list:
@@ -479,9 +493,16 @@ class Parser:
     def get_match_data(self, url):
         response = self.get_response_for_odds_request([url], '')[0]
         request = self.get_request_url_odds(response)[0]
-        response_odds = self.get_response_odds([request], [url])[0]
         game_info = self.get_game_info(response)
-        data_odds = self.clear_response_odds(response_odds)
+        response_odds = self.get_response_odds([request], [url])[0]
+        if game_info['sport'] == 'Tennis':
+            try:
+                data_odds = self.clear_response_odds(response_odds, ishod=2)
+            except Exception as ex:
+                print(ex)
+                print(traceback.format_exc())
+        else:
+            data_odds = self.clear_response_odds(response_odds)
         return data_odds, game_info
 
 

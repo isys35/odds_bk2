@@ -310,20 +310,142 @@ def save_data_in_file(data):
         ws.write(4, 8, 'Маржа', style_centr_aligment)
         target_row = 5
         list_for_excel = []
-        list_for_excel = []
         for bookmaker in data:
             list_for_excel.append([bookmaker[0],
                                    bookmaker[1],
                                    bookmaker[2],
-                                   bookmaker[3],
-                                   bookmaker[4]])
-        list_for_excel.sort(key=lambda i: i[4])
+                                   bookmaker[3]])
+        list_for_excel.sort(key=lambda i: i[3])
         for el in list_for_excel:
             major = ((1 / el[1] * 100)
-                     + (1 / el[2] * 100)
-                     + (1 / el[3] * 100)) - 100
+                     + (1 / el[2] * 100)) - 100
             el.append(major)
-        print(list_for_excel)
+        p1_sum = 0
+        p2_sum = 0
+        p1_sum_real = 0
+        p2_sum_real = 0
+        p1_lst = []
+        p2_lst = []
+        p1_real_lst = []
+        p2_real_lst = []
+        for el in list_for_excel:
+            ws.write(target_row, 0, el[0])
+            ws.write(target_row, 1, el[1], style_centr_aligment)
+            p1_lst.append(el[1])
+            p1_sum += el[1]
+            ws.write(target_row, 7, str(time.ctime(el[3])).split(' ', 1)[1])
+            ws.write(target_row, 2, el[2], style_centr_aligment)
+            p2_sum += el[2]
+            p2_lst.append(el[2])
+            ws.write(target_row, 8, round(el[4], 2), style_centr_aligment)
+            p1_real = round(el[1] * (1 + el[4]/100), 2)
+            p1_real_lst.append(p1_real)
+            p1_sum_real += p1_real
+            p2_real = round(el[2] * (1 + el[4] / 100),2)
+            p2_real_lst.append(p2_real)
+            p2_sum_real += p2_real
+            ws.write(target_row, 3, p1_real, style_centr_aligment)
+            ws.write(target_row, 4, p2_real, style_centr_aligment)
+            p1delta = p1_real-el[1]
+            if p1_real > el[1]:
+                p1delta = '+' + str(round(p1delta, 2))
+            else:
+                p1delta = '-' + str(round(p1delta, 2))
+            p2delta = p2_real - el[2]
+            if p2_real > el[2]:
+                p2delta = '+' + str(round(p2delta, 2))
+            else:
+                p2delta = '-' + str(round(p2delta, 2))
+            ws.write(target_row, 5, p1delta, style_centr_aligment)
+            ws.write(target_row, 6, p2delta, style_centr_aligment)
+            target_row += 1
+        p1_average = round(p1_sum / len(list_for_excel), 2)
+        p2_average = round(p2_sum / len(list_for_excel), 2)
+        p1_max = max(p1_lst)
+        p2_max = max(p2_lst)
+        p1_min = min(p1_lst)
+        p2_min = min(p2_lst)
+        print(p1_max, p2_max)
+        ws.write(target_row, 11, p1_average, style_centr_aligment)
+        ws.write(target_row, 12, p2_average, style_centr_aligment)
+        p1_average_real = round(p1_sum_real / len(list_for_excel), 2)
+        p2_average_real = round(p2_sum_real / len(list_for_excel), 2)
+        p1_real_max = max(p1_real_lst)
+        p2_real_max = max(p2_real_lst)
+        p1_real_min = min(p1_real_lst)
+        p2_real_min = min(p2_real_lst)
+        ws.write(target_row, 13, p1_average_real, style_centr_aligment)
+        ws.write(target_row, 14, p2_average_real, style_centr_aligment)
+        list_for_excel.sort(key=lambda i: i[4])
+        target_row = 5
+        for el in list_for_excel:
+            ws.write(target_row, 10, el[0])
+            if el[1] == p1_max:
+                ws.write(target_row, 11, el[1], style_red)
+            elif el[1] == p1_min:
+                ws.write(target_row, 11, el[1], style_green)
+            else:
+                if el[1] < p1_average:
+                    ws.write(target_row, 11, el[1], style_yellow)
+                elif el[1] == p1_average:
+                    ws.write(target_row, 11, el[1], style_orange)
+                else:
+                    ws.write(target_row, 11, el[1], style_centr_aligment)
+
+            if el[2] == p2_max:
+                ws.write(target_row, 12, el[2], style_red)
+            elif el[2] == p2_min:
+                ws.write(target_row, 12, el[2], style_green)
+            else:
+                if el[2] < p2_average:
+                    ws.write(target_row, 12, el[2], style_yellow)
+                elif el[2] == p2_average:
+                    ws.write(target_row, 12, el[2], style_orange)
+                else:
+                    ws.write(target_row, 12, el[2], style_centr_aligment)
+
+            ws.write(target_row, 17, str(time.ctime(el[3])).split(' ', 1)[1])
+            ws.write(target_row, 18, round(el[4], 2), style_centr_aligment)
+            p1_real = round(el[1] * (1 + el[4] / 100), 2)
+            p2_real = round(el[2] * (1 + el[4] / 100), 2)
+            print(p1_real, p1_real_min)
+            if p1_real == p1_real_max:
+                ws.write(target_row, 13, p1_real, style_red)
+            elif p1_real == p1_real_min:
+                ws.write(target_row, 13, p1_real, style_green)
+            else:
+                if p1_real < p1_average_real:
+                    ws.write(target_row, 13, p1_real, style_yellow)
+                elif p1_real == p1_average_real:
+                    ws.write(target_row, 13, p1_real, style_orange)
+                else:
+                    ws.write(target_row, 13, p1_real, style_centr_aligment)
+
+            if p2_real == p2_real_max:
+                ws.write(target_row, 14, p2_real, style_red)
+            elif p2_real == p2_real_min:
+                ws.write(target_row, 14, p2_real, style_green)
+            else:
+                if p2_real < p2_average_real:
+                    ws.write(target_row, 14, p2_real, style_yellow)
+                elif p2_real == p2_average_real:
+                    ws.write(target_row, 14, p2_real, style_orange)
+                else:
+                    ws.write(target_row, 14, p2_real, style_centr_aligment)
+
+            p1delta = p1_real-el[1]
+            if p1_real > el[1]:
+                p1delta = '+' + str(round(p1delta, 2))
+            else:
+                p1delta = '-' + str(round(p1delta, 2))
+            p2delta = p2_real - el[2]
+            if p2_real > el[2]:
+                p2delta = '+' + str(round(p2delta, 2))
+            else:
+                p2delta = '-' + str(round(p2delta, 2))
+            ws.write(target_row, 15, p1delta, style_centr_aligment)
+            ws.write(target_row, 16, p2delta, style_centr_aligment)
+            target_row += 1
     wb.save(file_name)
     full_path = 'D:/Project/odds_bk2/'
     with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
@@ -428,9 +550,16 @@ class MainApp(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
     def create_excel_for_game(self):
         url = self.lineEdit_5.text()
         parser = Parser()
-        data, info = parser.get_match_data(url)
+        try:
+            data, info = parser.get_match_data(url)
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
         print(data)
         print(info)
+        for key in data:
+            if None in data[key]:
+                data[key].remove(None)
         try:
             data_out = []
             bookmakers_exteptions = ['Betfair', 'Betfair Exchange', 'Matchbook']

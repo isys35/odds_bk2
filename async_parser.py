@@ -187,7 +187,17 @@ class Parser:
         id1 = json_data.get('id')
         id2 = unquote(json_data.get('xhash'))
         string_sport = soup.select_one('#breadcrumb').select('a')[1].text
-        if string_sport == 'Tennis':
+        if string_sport in ['Tennis',
+                            'Basketball',
+                            'Baseball',
+                            'American Football',
+                            'Volleyball',
+                            'Cricket',
+                            'Snooker',
+                            'Darts',
+                            'Beach Volleyball'
+                            'eSports'
+                            'MMA']:
             url_out = 'https://fb.oddsportal.com/feed/match/1-2-{}-3-2-{}.dat?_='.format(id1, id2)
         else:
             url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
@@ -495,7 +505,17 @@ class Parser:
         request = self.get_request_url_odds(response)[0]
         game_info = self.get_game_info(response)
         response_odds = self.get_response_odds([request], [url])[0]
-        if game_info['sport'] == 'Tennis':
+        if game_info['sport'] in ['Tennis',
+                                    'Basketball',
+                                    'Baseball',
+                                    'American Football',
+                                    'Volleyball',
+                                    'Cricket',
+                                    'Snooker',
+                                    'Darts',
+                                    'Beach Volleyball'
+                                    'eSports'
+                                    'MMA']:
             try:
                 data_odds = self.clear_response_odds(response_odds, ishod=2)
             except Exception as ex:

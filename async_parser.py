@@ -187,18 +187,14 @@ class Parser:
         id1 = json_data.get('id')
         id2 = unquote(json_data.get('xhash'))
         string_sport = soup.select_one('#breadcrumb').select('a')[1].text
-        if string_sport in ['Tennis',
-                            'Basketball',
-                            'Baseball',
-                            'American Football',
-                            'Volleyball',
-                            'Cricket',
-                            'Snooker',
-                            'Darts',
-                            'Beach Volleyball'
-                            'eSports'
-                            'MMA']:
+        if string_sport == 'Tennis':
             url_out = 'https://fb.oddsportal.com/feed/match/1-2-{}-3-2-{}.dat?_='.format(id1, id2)
+        elif string_sport == 'Basketball':
+            url_out = 'https://fb.oddsportal.com/feed/match/1-3-{}-3-1-{}.dat?_='.format(id1, id2)
+        elif string_sport == 'Volleyball':
+            url_out = 'https://fb.oddsportal.com/feed/match/1-12-{}-3-2-{}.dat?_='.format(id1, id2)
+        elif string_sport == 'eSports':
+            url_out = 'https://fb.oddsportal.com/feed/match/1-36-{}-3-2-{}.dat?_='.format(id1, id2)
         else:
             url_out = 'https://fb.oddsportal.com/feed/match/1-1-{}-1-2-{}.dat?_='.format(id1, id2)
         return url_out, result
@@ -218,13 +214,7 @@ class Parser:
         self.out_match_data['champ'] = string_champ
         print(self.out_match_data['champ'])
 
-    def clear_response_odds(self, odds_response, ishod=3):
-        """
-        Очистка ответа от API от ненужных данных
-        :param full:
-        :param odds_response:
-        :return:
-        """
+    def clear_response_odds(self, odds_response, e1=1, e2=2):
         null = None
         true = True
         false = False
@@ -233,22 +223,12 @@ class Parser:
         full_data = [el for el in eval(right_cut1[0])]
         print(full_data[1])
         try:
-            if ishod == 2:
-                dict_openodds = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['opening_odds']
-            else:
-                dict_openodds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_odds']
+            dict_openodds = full_data[1]['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['opening_odds']
         except TypeError:
             return
-        if ishod == 2:
-            dict_odds = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['odds']
-            dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['opening_change_time']
-            dict_change_time = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['change_time']
-            outcome_id = full_data[1]['d']['oddsdata']['back']['E-3-2-0-0-0']['OutcomeID']
-        else:
-            dict_odds = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['odds']
-            dict_opening_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['opening_change_time']
-            dict_change_time = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['change_time']
-            outcome_id = full_data[1]['d']['oddsdata']['back']['E-1-2-0-0-0']['OutcomeID']
+        dict_odds = full_data[1]['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['odds']
+        dict_opening_change_time = full_data[1]['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['opening_change_time']
+        dict_change_time = full_data[1]['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['change_time']
         out_dict_odds = {}
         for bk_id, odds in dict_openodds.items():
             if type(odds) is list:
@@ -505,24 +485,16 @@ class Parser:
         request = self.get_request_url_odds(response)[0]
         game_info = self.get_game_info(response)
         response_odds = self.get_response_odds([request], [url])[0]
-        if game_info['sport'] in ['Tennis',
-                                    'Basketball',
-                                    'Baseball',
-                                    'American Football',
-                                    'Volleyball',
-                                    'Cricket',
-                                    'Snooker',
-                                    'Darts',
-                                    'Beach Volleyball'
-                                    'eSports'
-                                    'MMA']:
-            try:
-                data_odds = self.clear_response_odds(response_odds, ishod=2)
-            except Exception as ex:
-                print(ex)
-                print(traceback.format_exc())
-        else:
-            data_odds = self.clear_response_odds(response_odds)
+        try:
+            if game_info['sport'] in ['Tennis', 'Volleyball', 'eSports']:
+                data_odds = self.clear_response_odds(response_odds, e1=3, e2=2)
+            elif game_info['sport'] == 'Basketball':
+                data_odds = self.clear_response_odds(response_odds, e1=3, e2=1)
+            else:
+                data_odds = self.clear_response_odds(response_odds)
+        except Exception as ex:
+            print(ex)
+            print(traceback.format_exc())
         return data_odds, game_info
 
 

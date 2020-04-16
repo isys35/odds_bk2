@@ -9,8 +9,7 @@ import time
 
 
 def save_data_in_file(data):
-    file_path = 'game_info/'
-    file_name = file_path + 'info.xls'
+    file_name = 'info.xls'
     wb = xlwt.Workbook()
     ws = wb.add_sheet('sheet')
     aligment = xlwt.Alignment()
@@ -408,7 +407,6 @@ def save_data_in_file(data):
             ws.write(target_row, 16, p2delta, style_centr_aligment)
             target_row += 1
     wb.save(file_name)
-    full_path = 'D:/Project/odds_bk2/'
     with subprocess.Popen(["start", "/WAIT", file_name], shell=True) as doc:
         doc.poll()
 

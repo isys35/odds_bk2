@@ -24,7 +24,7 @@ def save_data_in_file(data):
     style_yellow.alignment = aligment
     pattern_o = xlwt.Pattern()
     pattern_o.pattern = xlwt.Pattern.SOLID_PATTERN
-    pattern_o.pattern_fore_colour = xlwt.Style.colour_map['orange']
+    pattern_o.pattern_fore_colour = xlwt.Style.colour_map['aqua']
     style_orange = xlwt.XFStyle()
     style_orange.pattern = pattern_o
     style_orange.alignment = aligment

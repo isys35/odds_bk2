@@ -1,4 +1,4 @@
-from .parser import Grabber
+from parser_odds import Grabber
 
 
 def save_data_in_file(data):

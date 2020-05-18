@@ -80,13 +80,14 @@ class Grabber:
     def __init__(self):
         self.bookmakers = {}
         self.load_bookmakers()
+        self.champs_id_file = 'champs_id'
 
     def update_champs_id(self, selected_sport=None):
         if not selected_sport:
             print('[INFO] Обновление id всех турниров')
         else:
             print(f'[INFO] Обновление {self.SPORTS_ID[selected_sport]} турниров')
-        champs = {}
+        champs = eval(load_file(self.champs_id_file))
         url = self.MAIN_URL + '/results/'
         resp = requests.get(url, headers=self.HEADERS)
         soup = BeautifulSoup(resp.text, 'lxml')
@@ -134,14 +135,14 @@ class Grabber:
                             continue
                         soup_ajax_data = BeautifulSoup(data_ajax['d']['html'], 'lxml')
                         champ_id = soup_ajax_data.select_one('.dark.center')['xtid']
-                        champs[champ_id] = {'name': champ_name, 'country': country, 'sport_id': sport_id}
+                        champs[int(champ_id)] = {'name': champ_name, 'country': country, 'sport_id': sport_id}
                 cicle_time = time.time() - t_start
                 count_tds -= 1
                 time_left = cicle_time*count_tds
                 if time_left != 0:
                     minute_left = int(time_left/60)
                     print(f'[INFO] На обновление id турниров осталось {minute_left} минут')
-        save_file(str(champs), 'champs_id')
+            save_file(str(champs), self.champs_id_file)
         print('[INFO] Завершено')
 
     @staticmethod
@@ -174,7 +175,7 @@ class Grabber:
             for bookmaker in bookmakers_data:
                 self.bookmakers[bookmaker] = bookmakers_data[bookmaker]['WebName']
 
-    def get_match_data(self, url: str):
+    def get_event_data(self, url: str):
         resp = requests.get(url, headers=self.HEADERS)
         soup = BeautifulSoup(resp.text, 'lxml')
         game_info_soup = soup.select_one('#col-content')
@@ -186,6 +187,8 @@ class Grabber:
             result = result_live.text
         else:
             result = None
+        date_block = soup.select_one('.date.datet')['class'][2]
+        date = int(re.search(r'(\d*)-', date_block).group(1))
         json_data = self.get_data_script(resp.text, 'Event')
         command1 = json_data['home']
         command2 = json_data['away']
@@ -203,6 +206,7 @@ class Grabber:
         resp = requests.get(url, headers=headers_fb)
         json_data = eval(self.get_data_ajax(resp.text))
         openodds = json_data['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['opening_odds']
+        opening_change_time = json_data['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['opening_change_time']
         openodds_filter = {}
         for bookmaker_id in openodds:
             if bookmaker_id in self.bookmakers:
@@ -210,16 +214,40 @@ class Grabber:
                     list_keys_and_koef = list(openodds[bookmaker_id].items())
                     list_keys_and_koef.sort()
                     list_koef = [el[1] for el in list_keys_and_koef]
-                    openodds_filter[self.bookmakers[bookmaker_id]] = list_koef
+                    openodds_filter[self.bookmakers[bookmaker_id]] = {'coef': list_koef}
                 else:
-                    openodds_filter[self.bookmakers[bookmaker_id]] = openodds[bookmaker_id]
-
+                    openodds_filter[self.bookmakers[bookmaker_id]] = {'coef': openodds[bookmaker_id]}
+                if type(opening_change_time[bookmaker_id]) is dict:
+                    list_keys_and_time = list(opening_change_time[bookmaker_id].items())
+                    list_keys_and_time.sort()
+                    list_time = [el[1] for el in list_keys_and_time]
+                    openodds_filter[self.bookmakers[bookmaker_id]]['change_time'] = list_time[0]
+                else:
+                    openodds_filter[self.bookmakers[bookmaker_id]]['change_time'] = opening_change_time[bookmaker_id][0]
+        while True:
+            champs = eval(load_file(self.champs_id_file))
+            if champ_id in champs:
+                champ_name = champs[champ_id]['name']
+                country = champs[champ_id]['country']
+                break
+            else:
+                self.update_champs_id(sport_id)
+        return {'e1': e1,
+                'result': result,
+                'command1': command1,
+                'command2': command2,
+                'champ_name': champ_name,
+                'date': date,
+                'country': country,
+                'sport': self.SPORTS_ID[sport_id],
+                'open_odds': openodds_filter}
 
 
 if __name__ == '__main__':
     grabber = Grabber()
-    grabber.update_champs_id(1)
-    #grabber.get_match_data('https://www.oddsportal.com/soccer/africa/africa-cup-of-nations/equatorial-guinea-tunisia-MujIJeiH/')
+    #grabber.update_champs_id()
+    data = grabber.get_match_data('https://www.oddsportal.com/soccer/africa/cecafa-clubs-cup/as-maniema-green-eagles-OYTGqXsb/')
+    print(data)
     # grabber.get_match_data('https://www.oddsportal.com/basketball/asia/asia-championship-u16/china-australia-bVGTfJ0e/')
 
 

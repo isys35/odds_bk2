@@ -10,26 +10,27 @@ class ExcelWriter:
         self.wb = xlwt.Workbook()
         self.ws = self.wb.add_sheet('sheet')
         self.style_horz_aligment = get_style('horz_aligment')
+        self.style_little_value = get_style('little_value')
+        self.style_average_value = get_style('average_value')
+        self.style_max_value = get_style('max_value')
+        self.style_min_value = get_style('min_value')
 
     def save_data_in_excel(self, data):
-        style_little_value = get_style('little_value')
-        style_average_value = get_style('average_value')
-        style_max_value = get_style('max_value')
-        style_min_value = get_style('min_value')
         self.ws.col(0).width = 4000
         if data['e1'] == 1:
-            len_cilumn_content = 10
+            len_column_content = 10
         else:
-            len_cilumn_content = 7
-        self.ws.col(0 + len_cilumn_content).width = 6000
-        self.ws.col(2 + len_cilumn_content).width = 4000
-        self.ws.col(2 + len_cilumn_content * 2).width = 4000
+            len_column_content = 7
+        self.ws.col(0 + len_column_content).width = 6000
+        self.ws.col(3 + len_column_content).width = 4000
+        self.ws.col(2 + len_column_content * 2).width = 4000
         self.write_head(data)
         odds_data = data['open_odds']
         odds_data_list_sort_time = list(odds_data.items())
         odds_data_list_sort_time.sort(key=lambda i: i[1]['change_time'])
         self.calculate_additional_odds(odds_data_list_sort_time)
-        print(odds_data_list_sort_time)
+        dop_info = self.get_additional_info(odds_data_list_sort_time)
+        self.build_table(0, odds_data_list_sort_time)
         count_file = 0
         while True:
             try:
@@ -43,29 +44,48 @@ class ExcelWriter:
     # noinspection PyTypeChecker
     @staticmethod
     def calculate_additional_odds(odds_data_list):
-        all_coef = []
-        all_real_coef = []
         for bookmaker in odds_data_list:
-            all_coef.append(bookmaker[1]['coef'])
             major = sum([100/coef for coef in bookmaker[1]['coef']]) - 100
             bookmaker[1]['major'] = round(major, 2)
             real_coef = [round(coef*(1 + bookmaker[1]['major']/100), 2) for coef in bookmaker[1]['coef']]
-            all_real_coef.append(real_coef)
             bookmaker[1]['real_coef'] = real_coef
             delta_coef = [round(bookmaker[1]['real_coef'][index_len_coefs]-bookmaker[1]['coef'][index_len_coefs], 2) for index_len_coefs in range(0,len(bookmaker[1]['coef']))]
             bookmaker[1]['delta_coef'] = delta_coef
+
+    @staticmethod
+    def get_additional_info(odds_data_list):
+        all_coef = [bookmaker[1]['coef'] for bookmaker in odds_data_list]
+        all_real_coef = [bookmaker[1]['real_coef'] for bookmaker in odds_data_list]
         array_coef = np.array(all_coef)
         array_real_coef = np.array(all_real_coef)
         all_coef_transp = array_coef.transpose().tolist()
         all_real_coef_transp = array_real_coef.transpose().tolist()
-        coef_average = [round(sum(coef_p)/len(coef_p), 2) for coef_p in all_coef_transp]
+        coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_coef_transp]
         real_coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_real_coef_transp]
-        for bookmaker in odds_data_list:
-            bookmaker[1]['coef_average'] = coef_average
-            bookmaker[1]['real_coef_average'] = real_coef_average
+        return {'coef_average': coef_average, 'real_coef_average': real_coef_average}
 
-
-
+    def build_table(self, column, data, dop_info=None):
+        target_row = 6
+        print(data)
+        for bookmaker in data:
+            date = time.gmtime(bookmaker[1]['change_time'])
+            target_column = column
+            self.ws.write(target_row, target_column, bookmaker[0])
+            target_column += 1
+            for coef in bookmaker[1]['coef']:
+                self.ws.write(target_row, target_column, coef, self.style_horz_aligment)
+                target_column += 1
+            for coef in bookmaker[1]['real_coef']:
+                self.ws.write(target_row, target_column, coef, self.style_horz_aligment)
+                target_column += 1
+            for delta in bookmaker[1]['delta_coef']:
+                self.ws.write(target_row, target_column, f'+{delta}', self.style_horz_aligment)
+                target_column += 1
+            self.ws.write(target_row, target_column, time.strftime('%d %B %H:%M', date), self.style_horz_aligment)
+            target_column += 1
+            self.ws.write(target_row, target_column, bookmaker[1]['major'], self.style_horz_aligment)
+            target_column += 1
+            target_row += 1
 
     def write_head(self, data):
         date = time.gmtime(data['date'])
@@ -81,7 +101,11 @@ class ExcelWriter:
         self.ws.write(5, 2, 'П2', self.style_horz_aligment)
         if data['e1'] == 1:
             self.ws.write(5, 3, 'П3', self.style_horz_aligment)
-
+            self.ws.write(5, 10, 'Время', self.style_horz_aligment)
+            self.ws.write(5, 11, 'Маржа', self.style_horz_aligment)
+        else:
+            self.ws.write(5, 7, 'Время', self.style_horz_aligment)
+            self.ws.write(5, 8, 'Маржа', self.style_horz_aligment)
 
 
 def get_style(style_name):

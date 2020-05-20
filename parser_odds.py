@@ -82,69 +82,6 @@ class Grabber:
         self.load_bookmakers()
         self.champs_id_file = 'champs_id'
 
-    def update_champs_id(self, selected_sport=None):
-        if not selected_sport:
-            print('[INFO] Обновление id всех турниров')
-        else:
-            print(f'[INFO] Обновление {self.SPORTS_ID[selected_sport]} турниров')
-        champs = eval(load_file(self.champs_id_file))
-        url = self.MAIN_URL + '/results/'
-        resp = requests.get(url, headers=self.HEADERS)
-        soup = BeautifulSoup(resp.text, 'lxml')
-        trs = soup.select('tr')
-        trs = [tr for tr in trs if 'xsid' in tr.attrs]
-        country = None
-        count_tds = 0
-        for tr in trs:
-            tds = tr.select('td')
-            if selected_sport:
-                if int(tr['xsid']) != selected_sport:
-                    continue
-                else:
-                    count_tds += len(tds)
-            else:
-                count_tds += len(tds)
-        for tr in trs:
-            if 'class' in tr.attrs:
-                if tr['class'] == ['center']:
-                    country = tr.text.strip()
-            tds = tr.select('td')
-            sport_id = int(tr['xsid'])
-            if selected_sport:
-                if sport_id != selected_sport:
-                    continue
-            for td in tds:
-                a = td.select_one('a')
-                t_start = time.time()
-                if a:
-                    if a['href'][:2] != '//':
-                        champ_name = a.text
-                        url_champ = self.MAIN_URL + a['href']
-                        resp_champ = requests.get(url_champ, headers=self.HEADERS)
-                        if 'Page not found' in resp_champ.text:
-                            continue
-                        data_champ = self.get_data_script(resp_champ.text, 'Tournament')
-                        champ_text_id = data_champ['id']
-                        request_time = int(time.time() * 1000)
-                        url_champ_ajax = f"https://fb.oddsportal.com/ajax-sport-country-tournament-archive/{sport_id}/{champ_text_id}/X0/1/0/1/?_={request_time}"
-                        headers_ajx = self.HEADERS
-                        headers_ajx['Referer'] = url_champ
-                        resp_champ_ajax = requests.get(url_champ_ajax, headers=self.HEADERS)
-                        data_ajax = eval(self.get_data_ajax(resp_champ_ajax.text))
-                        if 'No data available' in data_ajax['d']['html']:
-                            continue
-                        soup_ajax_data = BeautifulSoup(data_ajax['d']['html'], 'lxml')
-                        champ_id = soup_ajax_data.select_one('.dark.center')['xtid']
-                        champs[int(champ_id)] = {'name': champ_name, 'country': country, 'sport_id': sport_id}
-                cicle_time = time.time() - t_start
-                count_tds -= 1
-                time_left = cicle_time*count_tds
-                if time_left != 0:
-                    minute_left = int(time_left/60)
-                    print(f'[INFO] На обновление id турниров осталось {minute_left} минут')
-            save_file(str(champs), self.champs_id_file)
-        print('[INFO] Завершено')
-
     @staticmethod
     def get_data_script(page: str, key: str):
         soup = BeautifulSoup(page, 'lxml')
@@ -187,12 +124,15 @@ class Grabber:
             result = result_live.text
         else:
             result = None
+        breadcrumb = soup.select_one('#breadcrumb')
+        champ_name = breadcrumb.select('a')[-1].text
+        country = breadcrumb.select('a')[-2].text
         date_block = soup.select_one('.date.datet')['class'][2]
         date = int(re.search(r'(\d*)-', date_block).group(1))
         json_data = self.get_data_script(resp.text, 'Event')
         command1 = json_data['home']
         command2 = json_data['away']
-        champ_id = json_data['tournamentId']
+        # champ_id = json_data['tournamentId']
         version_id = json_data['versionId']
         sport_id = json_data['sportId']
         id = json_data['id']
@@ -224,14 +164,6 @@ class Grabber:
                     openodds_filter[self.bookmakers[bookmaker_id]]['change_time'] = list_time[0]
                 else:
                     openodds_filter[self.bookmakers[bookmaker_id]]['change_time'] = opening_change_time[bookmaker_id][0]
-        while True:
-            champs = eval(load_file(self.champs_id_file))
-            if champ_id in champs:
-                champ_name = champs[champ_id]['name']
-                country = champs[champ_id]['country']
-                break
-            else:
-                self.update_champs_id(sport_id)
         return {'e1': e1,
                 'result': result,
                 'command1': command1,

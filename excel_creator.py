@@ -21,16 +21,19 @@ class ExcelWriter:
             len_column_content = 10
         else:
             len_column_content = 7
-        self.ws.col(0 + len_column_content).width = 6000
+        self.ws.col(0 + len_column_content).width = 4000
         self.ws.col(3 + len_column_content).width = 4000
-        self.ws.col(2 + len_column_content * 2).width = 4000
+        self.ws.col(3 + len_column_content * 2).width = 4000
         self.write_head(data)
         odds_data = data['open_odds']
-        odds_data_list_sort_time = list(odds_data.items())
-        odds_data_list_sort_time.sort(key=lambda i: i[1]['change_time'])
-        self.calculate_additional_odds(odds_data_list_sort_time)
-        dop_info = self.get_additional_info(odds_data_list_sort_time)
-        self.build_table(0, odds_data_list_sort_time)
+        odds_data_list_sort = list(odds_data.items())
+        odds_data_list_sort.sort(key=lambda i: i[1]['change_time'])
+        self.calculate_additional_odds(odds_data_list_sort)
+        dop_info = self.get_additional_info(odds_data_list_sort)
+        self.build_table(0, odds_data_list_sort)
+        odds_data_list_sort.sort(key=lambda i: i[1]['major'])
+        dop_info = self.get_additional_info(odds_data_list_sort)
+        self.build_table(3 + len_column_content, odds_data_list_sort, dop_info=dop_info)
         count_file = 0
         while True:
             try:
@@ -62,18 +65,42 @@ class ExcelWriter:
         all_real_coef_transp = array_real_coef.transpose().tolist()
         coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_coef_transp]
         real_coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_real_coef_transp]
-        return {'coef_average': coef_average, 'real_coef_average': real_coef_average}
+        coef_max = [max(coef_p) for coef_p in all_coef_transp]
+        real_coef_max = [max(coef_p) for coef_p in all_real_coef_transp]
+        coef_min = [min(coef_p) for coef_p in all_coef_transp]
+        real_coef_min = [min(coef_p) for coef_p in all_real_coef_transp]
+        return {'coef_average': coef_average,
+                'real_coef_average': real_coef_average,
+                'coef_min': coef_min,
+                'real_coef_min': real_coef_min,
+                'coef_max': coef_max,
+                'real_coef_max': real_coef_max}
 
     def build_table(self, column, data, dop_info=None):
         target_row = 6
         print(data)
+        print(dop_info)
         for bookmaker in data:
             date = time.gmtime(bookmaker[1]['change_time'])
             target_column = column
             self.ws.write(target_row, target_column, bookmaker[0])
             target_column += 1
-            for coef in bookmaker[1]['coef']:
-                self.ws.write(target_row, target_column, coef, self.style_horz_aligment)
+            for coef_index in range(0, len(bookmaker[1]['coef'])):
+                if dop_info:
+                    if bookmaker[1]['coef'][coef_index] == dop_info['coef_max'][coef_index]:
+                        self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_max_value)
+                    elif bookmaker[1]['coef'][coef_index] == dop_info['coef_min'][coef_index]:
+                        self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_min_value)
+                    else:
+                        if bookmaker[1]['coef'][coef_index] < dop_info['coef_average'][coef_index]:
+                            self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_little_value)
+                        elif bookmaker[1]['coef'][coef_index] == dop_info['coef_average'][coef_index]:
+                            self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_little_value)
+                        else:
+                            self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index],
+                                          self.style_horz_aligment)
+                else:
+                    self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_horz_aligment)
                 target_column += 1
             for coef in bookmaker[1]['real_coef']:
                 self.ws.write(target_row, target_column, coef, self.style_horz_aligment)
@@ -86,6 +113,7 @@ class ExcelWriter:
             self.ws.write(target_row, target_column, bookmaker[1]['major'], self.style_horz_aligment)
             target_column += 1
             target_row += 1
+
 
     def write_head(self, data):
         date = time.gmtime(data['date'])

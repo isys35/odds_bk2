@@ -2,6 +2,7 @@ from parser_odds import Grabber
 import xlwt, xlrd
 import subprocess
 import time
+import numpy as np
 
 
 class ExcelWriter:
@@ -27,6 +28,7 @@ class ExcelWriter:
         odds_data = data['open_odds']
         odds_data_list_sort_time = list(odds_data.items())
         odds_data_list_sort_time.sort(key=lambda i: i[1]['change_time'])
+        self.calculate_additional_odds(odds_data_list_sort_time)
         print(odds_data_list_sort_time)
         count_file = 0
         while True:
@@ -37,6 +39,33 @@ class ExcelWriter:
                 count_file += 1
         with subprocess.Popen(["start", "/WAIT", f'info{count_file}.xls'], shell=True) as doc:
             doc.poll()
+
+    # noinspection PyTypeChecker
+    @staticmethod
+    def calculate_additional_odds(odds_data_list):
+        all_coef = []
+        all_real_coef = []
+        for bookmaker in odds_data_list:
+            all_coef.append(bookmaker[1]['coef'])
+            major = sum([100/coef for coef in bookmaker[1]['coef']]) - 100
+            bookmaker[1]['major'] = round(major, 2)
+            real_coef = [round(coef*(1 + bookmaker[1]['major']/100), 2) for coef in bookmaker[1]['coef']]
+            all_real_coef.append(real_coef)
+            bookmaker[1]['real_coef'] = real_coef
+            delta_coef = [round(bookmaker[1]['real_coef'][index_len_coefs]-bookmaker[1]['coef'][index_len_coefs], 2) for index_len_coefs in range(0,len(bookmaker[1]['coef']))]
+            bookmaker[1]['delta_coef'] = delta_coef
+        array_coef = np.array(all_coef)
+        array_real_coef = np.array(all_real_coef)
+        all_coef_transp = array_coef.transpose().tolist()
+        all_real_coef_transp = array_real_coef.transpose().tolist()
+        coef_average = [round(sum(coef_p)/len(coef_p), 2) for coef_p in all_coef_transp]
+        real_coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_real_coef_transp]
+        for bookmaker in odds_data_list:
+            bookmaker[1]['coef_average'] = coef_average
+            bookmaker[1]['real_coef_average'] = real_coef_average
+
+
+
 
     def write_head(self, data):
         date = time.gmtime(data['date'])

@@ -14,6 +14,7 @@ class ExcelWriter:
         self.style_average_value = get_style('average_value')
         self.style_max_value = get_style('max_value')
         self.style_min_value = get_style('min_value')
+        self.exception_bookmakers = ['Betfair Exchange']
 
     def save_data_in_excel(self, data):
         self.ws.col(0).width = 4000
@@ -30,10 +31,10 @@ class ExcelWriter:
         odds_data_list_sort.sort(key=lambda i: i[1]['change_time'])
         self.calculate_additional_odds(odds_data_list_sort)
         dop_info = self.get_additional_info(odds_data_list_sort)
-        self.build_table(0, odds_data_list_sort)
+        self.build_table(0, odds_data_list_sort, dop_info=dop_info)
         odds_data_list_sort.sort(key=lambda i: i[1]['major'])
-        dop_info = self.get_additional_info(odds_data_list_sort)
         self.build_table(3 + len_column_content, odds_data_list_sort, dop_info=dop_info)
+        self.get_magic_info(odds_data_list_sort, dop_info)
         count_file = 0
         while True:
             try:
@@ -55,55 +56,56 @@ class ExcelWriter:
             delta_coef = [round(bookmaker[1]['real_coef'][index_len_coefs]-bookmaker[1]['coef'][index_len_coefs], 2) for index_len_coefs in range(0,len(bookmaker[1]['coef']))]
             bookmaker[1]['delta_coef'] = delta_coef
 
-    @staticmethod
-    def get_additional_info(odds_data_list):
-        all_coef = [bookmaker[1]['coef'] for bookmaker in odds_data_list]
-        all_real_coef = [bookmaker[1]['real_coef'] for bookmaker in odds_data_list]
+    def transponse_coefs(self, odds_data_list):
+        all_coef = [bookmaker[1]['coef'] for bookmaker in odds_data_list if
+                    bookmaker[0] not in self.exception_bookmakers]
+        all_real_coef = [bookmaker[1]['real_coef'] for bookmaker in odds_data_list if
+                         bookmaker[0] not in self.exception_bookmakers]
         array_coef = np.array(all_coef)
         array_real_coef = np.array(all_real_coef)
         all_coef_transp = array_coef.transpose().tolist()
         all_real_coef_transp = array_real_coef.transpose().tolist()
+        return all_coef_transp, all_real_coef_transp
+
+    def get_additional_info(self, odds_data_list):
+        all_coef_transp, all_real_coef_transp = self.transponse_coefs(odds_data_list)
         coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_coef_transp]
         real_coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_real_coef_transp]
         coef_max = [max(coef_p) for coef_p in all_coef_transp]
         real_coef_max = [max(coef_p) for coef_p in all_real_coef_transp]
         coef_min = [min(coef_p) for coef_p in all_coef_transp]
         real_coef_min = [min(coef_p) for coef_p in all_real_coef_transp]
-        return {'coef_average': coef_average,
-                'real_coef_average': real_coef_average,
-                'coef_min': coef_min,
-                'real_coef_min': real_coef_min,
-                'coef_max': coef_max,
-                'real_coef_max': real_coef_max}
+        return {'coef': {'average': coef_average, 'min': coef_min, 'max': coef_max},
+                'real_coef': {'average': real_coef_average, 'min': real_coef_min, 'max': real_coef_max}}
 
     def build_table(self, column, data, dop_info=None):
         target_row = 6
-        print(data)
-        print(dop_info)
         for bookmaker in data:
+            if bookmaker[0] in self.exception_bookmakers:
+                continue
             date = time.gmtime(bookmaker[1]['change_time'])
             target_column = column
             self.ws.write(target_row, target_column, bookmaker[0])
             target_column += 1
             for coef_index in range(0, len(bookmaker[1]['coef'])):
                 if dop_info:
-                    if bookmaker[1]['coef'][coef_index] == dop_info['coef_max'][coef_index]:
-                        self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_max_value)
-                    elif bookmaker[1]['coef'][coef_index] == dop_info['coef_min'][coef_index]:
-                        self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_min_value)
-                    else:
-                        if bookmaker[1]['coef'][coef_index] < dop_info['coef_average'][coef_index]:
-                            self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_little_value)
-                        elif bookmaker[1]['coef'][coef_index] == dop_info['coef_average'][coef_index]:
-                            self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_little_value)
-                        else:
-                            self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index],
-                                          self.style_horz_aligment)
+                    self.write_flag_cell(bookmaker[1]['coef'],
+                                         dop_info['coef'],
+                                         coef_index,
+                                         target_row,
+                                         target_column)
                 else:
                     self.ws.write(target_row, target_column, bookmaker[1]['coef'][coef_index], self.style_horz_aligment)
                 target_column += 1
-            for coef in bookmaker[1]['real_coef']:
-                self.ws.write(target_row, target_column, coef, self.style_horz_aligment)
+            for coef_index in range(0, len(bookmaker[1]['real_coef'])):
+                if dop_info:
+                    self.write_flag_cell(bookmaker[1]['real_coef'],
+                                         dop_info['real_coef'],
+                                         coef_index,
+                                         target_row,
+                                         target_column)
+                else:
+                    self.ws.write(target_row, target_column, bookmaker[1]['real_coef'][coef_index], self.style_horz_aligment)
                 target_column += 1
             for delta in bookmaker[1]['delta_coef']:
                 self.ws.write(target_row, target_column, f'+{delta}', self.style_horz_aligment)
@@ -113,7 +115,65 @@ class ExcelWriter:
             self.ws.write(target_row, target_column, bookmaker[1]['major'], self.style_horz_aligment)
             target_column += 1
             target_row += 1
+        if dop_info:
+            target_column = column + 1
+            for coef_average in dop_info['coef']['average']:
+                self.ws.write(target_row, target_column, coef_average, self.style_horz_aligment)
+                target_column += 1
+            for coef_average in dop_info['real_coef']['average']:
+                self.ws.write(target_row, target_column, coef_average, self.style_horz_aligment)
+                target_column += 1
 
+    def write_flag_cell(self, bookmaker_coef, dop_info_coef, coef_index, target_row, target_column):
+        if bookmaker_coef[coef_index] == dop_info_coef['max'][coef_index]:
+            self.ws.write(target_row, target_column, bookmaker_coef[coef_index], self.style_max_value)
+        elif bookmaker_coef[coef_index] == dop_info_coef['min'][coef_index]:
+            self.ws.write(target_row, target_column, bookmaker_coef[coef_index], self.style_min_value)
+        else:
+            if bookmaker_coef[coef_index] < dop_info_coef['average'][coef_index]:
+                self.ws.write(target_row, target_column, bookmaker_coef[coef_index], self.style_little_value)
+            elif bookmaker_coef[coef_index] == dop_info_coef['average'][coef_index]:
+                self.ws.write(target_row, target_column, bookmaker_coef[coef_index], self.style_little_value)
+            else:
+                self.ws.write(target_row, target_column, bookmaker_coef[coef_index],
+                              self.style_horz_aligment)
+
+    # noinspection PyTypeChecker
+    def get_magic_info(self, data, dop_info):
+        coef_transp, real_coef_transp = self.transponse_coefs(data)
+        first_magic_group = self.get_first_magic_group(real_coef_transp, dop_info['real_coef'])
+        second_magic_group = self.get_first_magic_group(coef_transp, dop_info['coef'])
+
+    def get_first_magic_group(self, list_coef, dop_info):
+        group = [None for _ in range(len(list_coef))]
+        # noinspection PyTypeChecker
+        for p_coefs_index in range(len(list_coef)):
+            min_index = None
+            max_index = None
+            for coef_index in range(len(list_coef[p_coefs_index])):
+                if list_coef[p_coefs_index][coef_index] == dop_info['min'][p_coefs_index]:
+                    min_index = coef_index
+                elif list_coef[p_coefs_index][coef_index] == dop_info['max'][p_coefs_index]:
+                    max_index = coef_index
+                if min_index:
+                    if list_coef[p_coefs_index][coef_index] == dop_info['max'][p_coefs_index]:
+                        max_index = coef_index
+                        # noinspection PyTypeChecker
+                        group[p_coefs_index] = {'delta': max_index - min_index, 'info': 'зк'}
+                        break
+                if max_index:
+                    if list_coef[p_coefs_index][coef_index] == dop_info['min'][p_coefs_index]:
+                        min_index = coef_index
+                        # noinspection PyTypeChecker
+                        group[p_coefs_index] = {'delta': min_index - max_index, 'info': 'кз'}
+                        break
+        print(group)
+        set_group = set([p['delta'] for p in group])
+        delta_group = list(set_group)
+        delta_group.sort(reverse=True)
+        for p in group:
+            p['index'] = delta_group.index(p['delta']) + 1
+        return group
 
     def write_head(self, data):
         date = time.gmtime(data['date'])

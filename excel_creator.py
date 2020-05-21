@@ -67,6 +67,7 @@ class ExcelWriter:
         all_real_coef_transp = array_real_coef.transpose().tolist()
         return all_coef_transp, all_real_coef_transp
 
+    # noinspection PyTypeChecker
     def get_additional_info(self, odds_data_list):
         all_coef_transp, all_real_coef_transp = self.transponse_coefs(odds_data_list)
         coef_average = [round(sum(coef_p) / len(coef_p), 2) for coef_p in all_coef_transp]
@@ -147,13 +148,29 @@ class ExcelWriter:
 
     def get_third_magic_group(self, first_magic_group, second_magic_group):
         len_group = len(first_magic_group)
+        group = [None for _ in range(len(first_magic_group))]
         changes = [{'min_index': first_magic_group[index]['min_index']-second_magic_group[index]['min_index'],
                     'max_index': first_magic_group[index]['max_index']-second_magic_group[index]['max_index']} for index in range(len_group)]
-        for p in changes:
-            p['delta'] = abs(p['min_index']) + abs(p['max_index'])
+        for p in range(len(changes)):
+            changes[p]['delta'] = abs(changes[p]['min_index']) + abs(changes[p]['max_index'])
+            if changes[p]['delta'] == 0:
+                changes[p]['info'] = '0'
+            else:
+                if first_magic_group[p]['info'] != second_magic_group[p]['info']:
+                    changes[p]['info'] = 'п'
+                    if first_magic_group[p]['min_index'] == second_magic_group[p]['min_index']:
+                        changes[p]['info'] = 'чз'
+                    if first_magic_group[p]['max_index'] == second_magic_group[p]['max_index']:
+                        changes[p]['info'] = 'чк'
+                else:
+                    if first_magic_group[p]['min_index'] == second_magic_group[p]['min_index']:
+                        changes[p]['info'] = 'дк'
+                    if first_magic_group[p]['max_index'] == second_magic_group[p]['max_index']:
+                        changes[p]['info'] = 'дз'
+
         print(changes)
 
-
+    # noinspection PyTypeChecker
     def get_first_magic_group(self, list_coef, dop_info):
         group = [None for _ in range(len(list_coef))]
         # noinspection PyTypeChecker
@@ -163,27 +180,23 @@ class ExcelWriter:
             for coef_index in range(len(list_coef[p_coefs_index])):
                 if list_coef[p_coefs_index][coef_index] == dop_info['min'][p_coefs_index]:
                     min_index = coef_index
-                elif list_coef[p_coefs_index][coef_index] == dop_info['max'][p_coefs_index]:
+                if list_coef[p_coefs_index][coef_index] == dop_info['max'][p_coefs_index]:
                     max_index = coef_index
-                if min_index:
-                    if list_coef[p_coefs_index][coef_index] == dop_info['max'][p_coefs_index]:
-                        max_index = coef_index
-                        # noinspection PyTypeChecker
-                        group[p_coefs_index] = {'delta': max_index - min_index,
-                                                'info': 'зк',
-                                                'max_index': max_index,
-                                                'min_index': min_index}
-                        break
-                if max_index:
-                    if list_coef[p_coefs_index][coef_index] == dop_info['min'][p_coefs_index]:
-                        min_index = coef_index
-                        # noinspection PyTypeChecker
-                        group[p_coefs_index] = {'delta': min_index - max_index,
-                                                'info': 'кз',
-                                                'max_index': max_index,
-                                                'min_index': min_index}
-                        break
-        set_group = set([p['delta'] for p in group])
+                if max_index and min_index:
+                    if max_index > min_index:
+                        info = 'зк'
+                    else:
+                        info = 'кз'
+                    group[p_coefs_index] = {'delta': abs(max_index - min_index),
+                                            'info': info,
+                                            'max_index': max_index,
+                                            'min_index': min_index}
+                    break
+        print(group)
+        try:
+            set_group = set([p['delta'] for p in group])
+        except TypeError:
+            print(list_coef, dop_info)
         delta_group = list(set_group)
         delta_group.sort(reverse=True)
         for p in group:

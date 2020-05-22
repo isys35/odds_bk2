@@ -143,10 +143,8 @@ class Grabber:
         url = f'https://fb.oddsportal.com/feed/match/{version_id}-{sport_id}-{id}-{e1}-{e2}-{xhash}.dat?_={time_request}'
         headers_fb = self.HEADERS
         headers_fb['Referer'] = url
-        print(url)
         resp = requests.get(url, headers=headers_fb)
         json_data = eval(self.get_data_ajax(resp.text))
-        print(json_data)
         openodds = json_data['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['opening_odds']
         opening_change_time = json_data['d']['oddsdata']['back'][f'E-{e1}-{e2}-0-0-0']['opening_change_time']
         openodds_filter = {}

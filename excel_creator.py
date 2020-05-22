@@ -5,6 +5,7 @@ import time
 import numpy as np
 
 
+# noinspection PyUnresolvedReferences
 class ExcelWriter:
     def __init__(self):
         self.wb = xlwt.Workbook()
@@ -34,7 +35,8 @@ class ExcelWriter:
         self.build_table(0, odds_data_list_sort, dop_info=dop_info)
         odds_data_list_sort.sort(key=lambda i: i[1]['major'])
         self.build_table(3 + len_column_content, odds_data_list_sort, dop_info=dop_info)
-        self.get_magic_info(odds_data_list_sort, dop_info)
+        magic_info = self.get_magic_info(odds_data_list_sort, dop_info)
+        self.write_magic_info(4 + len_column_content, 9 + len(odds_data_list_sort), magic_info)
         count_file = 0
         while True:
             try:
@@ -45,15 +47,26 @@ class ExcelWriter:
         with subprocess.Popen(["start", "/WAIT", f'info{count_file}.xls'], shell=True) as doc:
             doc.poll()
 
+    def write_magic_info(self, column, row, magic_info):
+        for group in magic_info:
+            target_column = magic_info.index(group) + column
+            for p in group:
+                if 'info' in p:
+                    self.ws.write(row, target_column, str(p['index']) + p['info'], self.style_horz_aligment)
+                else:
+                    self.ws.write(row, target_column, str(p['index']), self.style_horz_aligment)
+                target_column += 3
+
     # noinspection PyTypeChecker
     @staticmethod
     def calculate_additional_odds(odds_data_list):
         for bookmaker in odds_data_list:
-            major = sum([100/coef for coef in bookmaker[1]['coef']]) - 100
+            major = sum([100 / coef for coef in bookmaker[1]['coef']]) - 100
             bookmaker[1]['major'] = round(major, 2)
-            real_coef = [round(coef*(1 + bookmaker[1]['major']/100), 2) for coef in bookmaker[1]['coef']]
+            real_coef = [round(coef * (1 + bookmaker[1]['major'] / 100), 2) for coef in bookmaker[1]['coef']]
             bookmaker[1]['real_coef'] = real_coef
-            delta_coef = [round(bookmaker[1]['real_coef'][index_len_coefs]-bookmaker[1]['coef'][index_len_coefs], 2) for index_len_coefs in range(0,len(bookmaker[1]['coef']))]
+            delta_coef = [round(bookmaker[1]['real_coef'][index_len_coefs] - bookmaker[1]['coef'][index_len_coefs], 2)
+                          for index_len_coefs in range(0, len(bookmaker[1]['coef']))]
             bookmaker[1]['delta_coef'] = delta_coef
 
     def transponse_coefs(self, odds_data_list):
@@ -106,7 +119,8 @@ class ExcelWriter:
                                          target_row,
                                          target_column)
                 else:
-                    self.ws.write(target_row, target_column, bookmaker[1]['real_coef'][coef_index], self.style_horz_aligment)
+                    self.ws.write(target_row, target_column, bookmaker[1]['real_coef'][coef_index],
+                                  self.style_horz_aligment)
                 target_column += 1
             for delta in bookmaker[1]['delta_coef']:
                 self.ws.write(target_row, target_column, f'+{delta}', self.style_horz_aligment)
@@ -145,30 +159,49 @@ class ExcelWriter:
         first_magic_group = self.get_first_magic_group(real_coef_transp, dop_info['real_coef'])
         second_magic_group = self.get_first_magic_group(coef_transp, dop_info['coef'])
         third_magic_group = self.get_third_magic_group(first_magic_group, second_magic_group)
+        return first_magic_group, second_magic_group, third_magic_group
 
     def get_third_magic_group(self, first_magic_group, second_magic_group):
         len_group = len(first_magic_group)
-        group = [None for _ in range(len(first_magic_group))]
-        changes = [{'min_index': first_magic_group[index]['min_index']-second_magic_group[index]['min_index'],
-                    'max_index': first_magic_group[index]['max_index']-second_magic_group[index]['max_index']} for index in range(len_group)]
-        for p in range(len(changes)):
-            changes[p]['delta'] = abs(changes[p]['min_index']) + abs(changes[p]['max_index'])
-            if changes[p]['delta'] == 0:
-                changes[p]['info'] = '0'
+        # print(first_magic_group)
+        group = [{'min_index': first_magic_group[index]['min_index'] - second_magic_group[index]['min_index'],
+                  'max_index': first_magic_group[index]['max_index'] - second_magic_group[index]['max_index']} for
+                 index in range(len_group)]
+        for p in range(len(group)):
+            group[p]['delta'] = abs(group[p]['min_index']) + abs(group[p]['max_index'])
+            if group[p]['delta'] == 0:
+                group[p]['info'] = '0'
+            elif set(first_magic_group[p]['min_index_lst']).issubset(second_magic_group[p]['min_index_lst']) and \
+                    set(first_magic_group[p]['max_index_lst']).issubset(second_magic_group[p]['max_index_lst']):
+                group[p]['info'] = '0'
+                group[p]['delta'] = 0
             else:
                 if first_magic_group[p]['info'] != second_magic_group[p]['info']:
-                    changes[p]['info'] = 'п'
+                    group[p]['info'] = 'п'
                     if first_magic_group[p]['min_index'] == second_magic_group[p]['min_index']:
-                        changes[p]['info'] = 'чз'
+                        group[p]['info'] = 'чз'
+                    elif first_magic_group[p]['min_index'] in second_magic_group[p]['min_index_lst']:
+                        group[p]['info'] = 'чз'
                     if first_magic_group[p]['max_index'] == second_magic_group[p]['max_index']:
-                        changes[p]['info'] = 'чк'
+                        group[p]['info'] = 'чк'
+                    elif first_magic_group[p]['max_index'] in second_magic_group[p]['max_index_lst']:
+                        group[p]['info'] = 'чк'
                 else:
                     if first_magic_group[p]['min_index'] == second_magic_group[p]['min_index']:
-                        changes[p]['info'] = 'дк'
-                    if first_magic_group[p]['max_index'] == second_magic_group[p]['max_index']:
-                        changes[p]['info'] = 'дз'
+                        group[p]['info'] = 'дк'
+                    elif first_magic_group[p]['max_index'] == second_magic_group[p]['max_index']:
+                        group[p]['info'] = 'дз'
+                    else:
+                        group[p]['info'] = 'дд'
+        self.update_index_group(group)
+        return group
 
-        print(changes)
+    def update_index_group(self, group):
+        set_group = set([p['delta'] for p in group])
+        delta_group = list(set_group)
+        delta_group.sort(reverse=True)
+        for p in group:
+            p['index'] = delta_group.index(p['delta']) + 1
 
     # noinspection PyTypeChecker
     def get_first_magic_group(self, list_coef, dop_info):
@@ -177,30 +210,28 @@ class ExcelWriter:
         for p_coefs_index in range(len(list_coef)):
             min_index = None
             max_index = None
+            min_index_lst = []
+            max_index_lst = []
             for coef_index in range(len(list_coef[p_coefs_index])):
                 if list_coef[p_coefs_index][coef_index] == dop_info['min'][p_coefs_index]:
                     min_index = coef_index
+                    min_index_lst.append(min_index)
                 if list_coef[p_coefs_index][coef_index] == dop_info['max'][p_coefs_index]:
                     max_index = coef_index
-                if max_index and min_index:
+                    max_index_lst.append(max_index)
+                if max_index is not None and min_index is not None:
                     if max_index > min_index:
                         info = 'зк'
                     else:
                         info = 'кз'
-                    group[p_coefs_index] = {'delta': abs(max_index - min_index),
-                                            'info': info,
-                                            'max_index': max_index,
-                                            'min_index': min_index}
-                    break
-        print(group)
-        try:
-            set_group = set([p['delta'] for p in group])
-        except TypeError:
-            print(list_coef, dop_info)
-        delta_group = list(set_group)
-        delta_group.sort(reverse=True)
-        for p in group:
-            p['index'] = delta_group.index(p['delta']) + 1
+                    if group[p_coefs_index] is None:
+                        group[p_coefs_index] = {'delta': abs(max_index - min_index),
+                                                'info': info,
+                                                'max_index': max_index,
+                                                'min_index': min_index}
+            group[p_coefs_index]['max_index_lst'] = max_index_lst
+            group[p_coefs_index]['min_index_lst'] = min_index_lst
+        self.update_index_group(group)
         return group
 
     def write_head(self, data):
@@ -222,6 +253,7 @@ class ExcelWriter:
         else:
             self.ws.write(5, 7, 'Время', self.style_horz_aligment)
             self.ws.write(5, 8, 'Маржа', self.style_horz_aligment)
+
 
 
 def get_style(style_name):

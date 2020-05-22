@@ -37,6 +37,8 @@ class ExcelWriter:
         self.build_table(3 + len_column_content, odds_data_list_sort, dop_info=dop_info)
         magic_info = self.get_magic_info(odds_data_list_sort, dop_info)
         self.write_magic_info(4 + len_column_content, 9 + len(odds_data_list_sort), magic_info)
+        delta_info = self.get_delta_info(odds_data_list_sort)
+        self.write_delta_info(5 + len_column_content*2, delta_info)
         count_file = 0
         while True:
             try:
@@ -56,6 +58,34 @@ class ExcelWriter:
                 else:
                     self.ws.write(row, target_column, str(p['index']), self.style_horz_aligment)
                 target_column += 3
+
+    def get_delta_info(self, data):
+        delta_info_bookmakers = []
+        print(data)
+        for bookmaker_id in range(0,len(data) - 1):
+            if data[bookmaker_id][0] in self.exception_bookmakers:
+                continue
+            delta_info_bookmaker = []
+            for coef_index in range(0, len(data[bookmaker_id][1]['real_coef'])):
+                value_delta = data[bookmaker_id][1]['real_coef'][coef_index] -\
+                              data[bookmaker_id + 1][1]['real_coef'][coef_index]
+                value_delta_change = data[bookmaker_id + 1][1]['delta_coef'][coef_index] -\
+                              data[bookmaker_id][1]['delta_coef'][coef_index]
+                delta_info_bookmaker.append(round((value_delta+value_delta_change)*100))
+            delta_info_bookmakers.append(delta_info_bookmaker)
+        return delta_info_bookmakers
+
+    def write_delta_info(self, column, data):
+        target_row = 6
+        for delta_list in data:
+            target_column = column
+            for delta in delta_list:
+                target_column += 1
+            target_row += 1
+
+
+
+
 
     # noinspection PyTypeChecker
     @staticmethod
@@ -253,7 +283,6 @@ class ExcelWriter:
         else:
             self.ws.write(5, 7, 'Время', self.style_horz_aligment)
             self.ws.write(5, 8, 'Маржа', self.style_horz_aligment)
-
 
 
 def get_style(style_name):

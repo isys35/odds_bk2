@@ -37,13 +37,13 @@ class ExcelWriter:
         magic_info = self.get_magic_info(odds_data_list_sort, dop_info)
         self.write_magic_info(1, 9 + len(odds_data_list_sort), magic_info)
         delta_info = self.get_delta_info(odds_data_list_sort)
-        self.write_delta_info(2+len_column_content, delta_info)
+        self.write_delta_info(2 + len_column_content, delta_info)
         odds_data_list_sort.sort(key=lambda i: i[1]['major'])
         self.build_table(6 + len_column_content, odds_data_list_sort, dop_info=dop_info)
         magic_info = self.get_magic_info(odds_data_list_sort, dop_info)
         self.write_magic_info(7 + len_column_content, 9 + len(odds_data_list_sort), magic_info)
         delta_info = self.get_delta_info(odds_data_list_sort)
-        self.write_delta_info(8 + len_column_content*2, delta_info)
+        self.write_delta_info(8 + len_column_content * 2, delta_info)
         self.save_file()
 
     def save_file(self):
@@ -62,16 +62,16 @@ class ExcelWriter:
 
     def get_delta_info(self, data):
         delta_info_bookmakers = []
-        for bookmaker_id in range(0,len(data) - 1):
+        for bookmaker_id in range(0, len(data) - 1):
             if data[bookmaker_id][0] in self.exception_bookmakers:
                 continue
             delta_info_bookmaker = []
             for coef_index in range(0, len(data[bookmaker_id][1]['real_coef'])):
-                value_delta = data[bookmaker_id][1]['real_coef'][coef_index] -\
+                value_delta = data[bookmaker_id][1]['real_coef'][coef_index] - \
                               data[bookmaker_id + 1][1]['real_coef'][coef_index]
-                value_delta_change = data[bookmaker_id + 1][1]['delta_coef'][coef_index] -\
-                              data[bookmaker_id][1]['delta_coef'][coef_index]
-                delta_info_bookmaker.append(round((value_delta+value_delta_change)*100))
+                value_delta_change = data[bookmaker_id + 1][1]['delta_coef'][coef_index] - \
+                                     data[bookmaker_id][1]['delta_coef'][coef_index]
+                delta_info_bookmaker.append(round((value_delta + value_delta_change) * 100))
             delta_info_bookmakers.append(delta_info_bookmaker)
         return delta_info_bookmakers
 
@@ -222,7 +222,8 @@ class ExcelWriter:
         self.update_index_group(group)
         return group
 
-    def update_index_group(self, group):
+    @staticmethod
+    def update_index_group(group):
         set_group = set([p['delta'] for p in group])
         delta_group = list(set_group)
         delta_group.sort(reverse=True)

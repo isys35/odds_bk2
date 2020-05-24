@@ -3,6 +3,7 @@ import xlwt, xlrd
 import subprocess
 import time
 import numpy as np
+from threading import Thread
 
 
 # noinspection PyUnresolvedReferences
@@ -24,8 +25,8 @@ class ExcelWriter:
         else:
             len_column_content = 7
         self.ws.col(0 + len_column_content).width = 4000
-        self.ws.col(3 + len_column_content).width = 4000
-        self.ws.col(3 + len_column_content * 2).width = 4000
+        self.ws.col(6 + len_column_content).width = 4000
+        self.ws.col(6 + len_column_content * 2).width = 4000
         self.write_head(data)
         odds_data = data['open_odds']
         odds_data_list_sort = list(odds_data.items())
@@ -33,21 +34,21 @@ class ExcelWriter:
         self.calculate_additional_odds(odds_data_list_sort)
         dop_info = self.get_additional_info(odds_data_list_sort)
         self.build_table(0, odds_data_list_sort, dop_info=dop_info)
-        odds_data_list_sort.sort(key=lambda i: i[1]['major'])
-        self.build_table(3 + len_column_content, odds_data_list_sort, dop_info=dop_info)
         magic_info = self.get_magic_info(odds_data_list_sort, dop_info)
-        self.write_magic_info(4 + len_column_content, 9 + len(odds_data_list_sort), magic_info)
+        self.write_magic_info(1, 9 + len(odds_data_list_sort), magic_info)
         delta_info = self.get_delta_info(odds_data_list_sort)
-        self.write_delta_info(5 + len_column_content*2, delta_info)
-        count_file = 0
-        while True:
-            try:
-                self.wb.save(f'info{count_file}.xls')
-                break
-            except PermissionError:
-                count_file += 1
-        with subprocess.Popen(["start", "/WAIT", f'info{count_file}.xls'], shell=True) as doc:
-            doc.poll()
+        self.write_delta_info(2+len_column_content, delta_info)
+        odds_data_list_sort.sort(key=lambda i: i[1]['major'])
+        self.build_table(6 + len_column_content, odds_data_list_sort, dop_info=dop_info)
+        magic_info = self.get_magic_info(odds_data_list_sort, dop_info)
+        self.write_magic_info(7 + len_column_content, 9 + len(odds_data_list_sort), magic_info)
+        delta_info = self.get_delta_info(odds_data_list_sort)
+        self.write_delta_info(8 + len_column_content*2, delta_info)
+        self.save_file()
+
+    def save_file(self):
+        save_thread = SaveThread(self.wb)
+        save_thread.start()
 
     def write_magic_info(self, column, row, magic_info):
         for group in magic_info:
@@ -61,7 +62,6 @@ class ExcelWriter:
 
     def get_delta_info(self, data):
         delta_info_bookmakers = []
-        print(data)
         for bookmaker_id in range(0,len(data) - 1):
             if data[bookmaker_id][0] in self.exception_bookmakers:
                 continue
@@ -80,12 +80,9 @@ class ExcelWriter:
         for delta_list in data:
             target_column = column
             for delta in delta_list:
+                self.ws.write(target_row, target_column, delta, self.style_horz_aligment)
                 target_column += 1
             target_row += 1
-
-
-
-
 
     # noinspection PyTypeChecker
     @staticmethod
@@ -193,7 +190,6 @@ class ExcelWriter:
 
     def get_third_magic_group(self, first_magic_group, second_magic_group):
         len_group = len(first_magic_group)
-        # print(first_magic_group)
         group = [{'min_index': first_magic_group[index]['min_index'] - second_magic_group[index]['min_index'],
                   'max_index': first_magic_group[index]['max_index'] - second_magic_group[index]['max_index']} for
                  index in range(len_group)]
@@ -306,12 +302,30 @@ def get_style(style_name):
     return style
 
 
+class SaveThread(Thread):
+    def __init__(self, wb):
+        super().__init__()
+        self.wb = wb
+
+    def run(self):
+        count_file = 0
+        while True:
+            try:
+                self.wb.save(f'info{count_file}.xls')
+                break
+            except PermissionError:
+                count_file += 1
+        with subprocess.Popen(["start", "/WAIT", f'info{count_file}.xls'], shell=True) as doc:
+            doc.poll()
+
+
 def main():
-    parser = Grabber()
-    url_event = input('Введите ссылку:')
-    data = parser.get_event_data(url_event)
-    excel = ExcelWriter()
-    excel.save_data_in_excel(data)
+    while True:
+        parser = Grabber()
+        url_event = input('Введите ссылку:')
+        data = parser.get_event_data(url_event)
+        excel = ExcelWriter()
+        excel.save_data_in_excel(data)
 
 
 if __name__ == '__main__':

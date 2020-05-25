@@ -73,6 +73,9 @@ class ExcelWriter:
                                      data[bookmaker_id][1]['delta_coef'][coef_index]
                 delta_info_bookmaker.append(round((value_delta + value_delta_change) * 100))
             delta_info_bookmakers.append(delta_info_bookmaker)
+        delta_info_sum = [sum([el[0] for el in delta_info_bookmakers]), sum([el[1] for el in delta_info_bookmakers])]
+        delta_info_bookmakers.append([None, None])
+        delta_info_bookmakers.append(delta_info_sum)
         return delta_info_bookmakers
 
     def write_delta_info(self, column, data):
@@ -239,6 +242,7 @@ class ExcelWriter:
             max_index = None
             min_index_lst = []
             max_index_lst = []
+            all_possible_groups = []
             for coef_index in range(len(list_coef[p_coefs_index])):
                 if list_coef[p_coefs_index][coef_index] == dop_info['min'][p_coefs_index]:
                     min_index = coef_index
@@ -251,11 +255,15 @@ class ExcelWriter:
                         info = 'зк'
                     else:
                         info = 'кз'
-                    if group[p_coefs_index] is None:
-                        group[p_coefs_index] = {'delta': abs(max_index - min_index),
+                    all_possible_groups.append({'delta': abs(max_index - min_index),
                                                 'info': info,
                                                 'max_index': max_index,
-                                                'min_index': min_index}
+                                                'min_index': min_index})
+            minimum_delta = min([el['delta'] for el in all_possible_groups])
+            for append_group in all_possible_groups:
+                if append_group['delta'] == minimum_delta:
+                    group[p_coefs_index] = append_group
+                    break
             group[p_coefs_index]['max_index_lst'] = max_index_lst
             group[p_coefs_index]['min_index_lst'] = min_index_lst
         self.update_index_group(group)
